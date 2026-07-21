@@ -60,7 +60,7 @@ Two page states in one document:
   - Inner ring counter-clockwise
   - Thin stroke with dashed/highlight segments
 - Brand title: `SakiBlog` (tech / monospace feel)
-- Subcopy: `INITIALIZING...` (or equivalent Chinese “系统初始化中”)
+- Subcopy default: `INITIALIZING...`
 - Thin progress bar + numeric percent (0% → 100%)
 - `Skip` control visible during loading
 
@@ -91,7 +91,7 @@ Easing: ease-out or custom ease for progress (not linear only).
 | Input | Result |
 | --- | --- |
 | Auto | Play full sequence then enter Ready |
-| Click `Skip` | Jump to 100% and run exit fade |
+| Click `Skip` | Jump progress to 100%, skip complete-flash, run exit fade only |
 | Press `Esc` | Same as Skip |
 | Click `Replay` (Ready) | Reset progress, show overlay, replay sequence |
 
