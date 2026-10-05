@@ -70,3 +70,49 @@ export function fetchPosts(page = 1, pageSize = 10): Promise<PostList> {
 export function fetchPost(id: number | string): Promise<PostDetail> {
   return request<PostDetail>(`/api/posts/${id}`)
 }
+
+export interface CategoryWithCount {
+  id: number
+  name: string
+  article_count: number
+}
+
+export interface TagWithCount {
+  id: number
+  name: string
+  article_count: number
+}
+
+export interface SearchResult {
+  query: string
+  total: number
+  items: PostSummary[]
+}
+
+export function fetchCategories(): Promise<CategoryWithCount[]> {
+  return request<CategoryWithCount[]>('/api/categories')
+}
+
+export function fetchCategory(id: number | string): Promise<CategoryWithCount> {
+  return request<CategoryWithCount>(`/api/categories/${id}`)
+}
+
+export function fetchTags(): Promise<TagWithCount[]> {
+  return request<TagWithCount[]>('/api/tags')
+}
+
+export function fetchTag(id: number | string): Promise<TagWithCount> {
+  return request<TagWithCount>(`/api/tags/${id}`)
+}
+
+export function fetchPostsOfCategory(id: number | string, page = 1, pageSize = 50): Promise<PostList> {
+  return request<PostList>(`/api/posts?category_id=${id}&page=${page}&page_size=${pageSize}`)
+}
+
+export function fetchPostsOfTag(id: number | string, page = 1, pageSize = 50): Promise<PostList> {
+  return request<PostList>(`/api/posts?tag_id=${id}&page=${page}&page_size=${pageSize}`)
+}
+
+export function fetchSearch(query: string): Promise<SearchResult> {
+  return request<SearchResult>(`/api/search?q=${encodeURIComponent(query)}`)
+}

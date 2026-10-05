@@ -36,9 +36,24 @@ const router = createRouter({
       component: () => import('@/views/CategoriesView.vue'),
     },
     {
+      path: '/categories/:id',
+      name: 'category-posts',
+      component: () => import('@/views/CategoryArticlesView.vue'),
+    },
+    {
       path: '/tags',
       name: 'tags',
       component: () => import('@/views/TagsView.vue'),
+    },
+    {
+      path: '/tags/:id',
+      name: 'tag-posts',
+      component: () => import('@/views/TagArticlesView.vue'),
+    },
+    {
+      path: '/search',
+      name: 'search',
+      component: () => import('@/views/SearchView.vue'),
     },
     {
       path: '/about',

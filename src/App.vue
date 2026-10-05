@@ -1,5 +1,17 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import { ref } from 'vue'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
+
+// FR-SEARCH-001/003:主要页面提供搜索入口,空关键词不触发导航
+const router = useRouter()
+const searchQuery = ref('')
+
+function submitSearch() {
+  const q = searchQuery.value.trim()
+  if (!q) return
+  router.push({ path: '/search', query: { q } })
+  searchQuery.value = ''
+}
 </script>
 
 <template>
@@ -13,6 +25,16 @@ import { RouterLink, RouterView } from 'vue-router'
         <RouterLink to="/tags">标签</RouterLink>
         <RouterLink to="/about">关于</RouterLink>
       </nav>
+      <form class="search-form" role="search" @submit.prevent="submitSearch">
+        <input
+          v-model="searchQuery"
+          type="search"
+          name="q"
+          placeholder="搜索文章"
+          aria-label="搜索文章"
+        />
+        <button type="submit">搜索</button>
+      </form>
     </header>
 
     <main class="site-main">
@@ -66,6 +88,34 @@ import { RouterLink, RouterView } from 'vue-router'
 .site-nav a.router-link-active {
   color: var(--color-text);
   font-weight: 600;
+}
+
+.search-form {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.search-form input {
+  width: 10rem;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.search-form button {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.search-form button:hover {
+  border-color: var(--color-accent);
 }
 
 .site-main {
