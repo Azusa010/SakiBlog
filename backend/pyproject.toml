@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "cryptography>=49.0.0",
     "fastapi[standard]>=0.139.2",
+    "pydantic-settings>=2.14.2",
     "pymysql>=1.2.0",
     "sqlalchemy>=2.0.51",
     "uvicorn[standard]>=0.51.0",
@@ -18,3 +19,11 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.15.22",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff.lint.per-file-ignores]
+# conftest 需要在导入 app 前设置 DATABASE_URL 等环境变量
+"tests/conftest.py" = ["E402"]
