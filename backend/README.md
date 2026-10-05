@@ -48,6 +48,26 @@ CREATE DATABASE sakiblog CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 重启服务即可重新建表。正式迁移工具(Alembic)按 SRS §2.6 留待后续引入。
 
+## 数据备份与恢复(NFR-DATA-003)
+
+备份(Windows 路径按实际安装位置调整;`-p` 后回车输入 root 密码):
+
+```bash
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe" -u root -p --default-character-set=utf8mb4 sakiblog > sakiblog_backup.sql
+```
+
+恢复(先确保同名库存在,再整库导入;**会覆盖目标库现有数据**):
+
+```bash
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p -e "CREATE DATABASE IF NOT EXISTS sakiblog CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p --default-character-set=utf8mb4 sakiblog < sakiblog_backup.sql
+```
+
+说明:
+
+- 备份/恢复是管理操作,用 root 或独立的管理账户执行,不要给应用专用用户(`sakiblog`)提权。
+- 2026-10-06 已用开发库完成完整演练:导出后恢复到临时库,文章数(6)与标签关联数(8)与原库一致。
+
 ## 验证数据
 
 建表后可插入一篇文章验证接口:
