@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import MarkdownIt from 'markdown-it'
 import { ApiError, fetchPost, type PostDetail as PostDetailData } from '@/api/posts'
+import { renderMarkdown } from '@/markdown'
 
 /**
  * 文章详情页(SRS FR-ARTICLE-001/002/008):
@@ -13,24 +13,7 @@ const route = useRoute()
 const post = ref<PostDetailData | null>(null)
 const status = ref<'loading' | 'ready' | 'error' | 'not-found'>('loading')
 
-// html:false 让正文中的原始 HTML 被转义输出,是 NFR-SEC-001/007 的安全基线
-const md = new MarkdownIt({ html: false, linkify: true })
-
-// 外部链接新窗口打开并剥离 opener(FR-ARTICLE-004 / NFR-SEC-002)
-const defaultLinkOpen = md.renderer.rules.link_open
-md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
-  const token = tokens[idx]
-  const href = String(token?.attrGet('href') ?? '')
-  if (token && /^https?:\/\//i.test(href)) {
-    token.attrSet('target', '_blank')
-    token.attrSet('rel', 'noopener noreferrer')
-  }
-  return defaultLinkOpen
-    ? defaultLinkOpen(tokens, idx, options, env, self)
-    : self.renderToken(tokens, idx, options)
-}
-
-const renderedContent = computed(() => (post.value ? md.render(post.value.content) : ''))
+const renderedContent = computed(() => (post.value ? renderMarkdown(post.value.content) : ''))
 
 async function load() {
   status.value = 'loading'

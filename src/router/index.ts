@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 /**
  * Route table for the public site.
@@ -56,9 +57,50 @@ const router = createRouter({
       component: () => import('@/views/SearchView.vue'),
     },
     {
-      path: '/about',
-      name: 'about',
-      component: () => import('@/views/AboutView.vue'),
+      path: '/search',
+      name: 'search',
+      component: () => import('@/views/SearchView.vue'),
+    },
+    {
+      path: '/admin/login',
+      name: 'admin-login',
+      component: () => import('@/views/admin/AdminLoginView.vue'),
+    },
+    {
+      path: '/admin',
+      redirect: { name: 'admin-posts' },
+    },
+    {
+      path: '/admin/posts',
+      name: 'admin-posts',
+      component: () => import('@/views/admin/AdminPostsView.vue'),
+      meta: { requiresAdmin: true },
+    },
+    {
+      path: '/admin/posts/new',
+      name: 'admin-post-new',
+      component: () => import('@/views/admin/AdminPostEditView.vue'),
+      meta: { requiresAdmin: true },
+    },
+    {
+      path: '/admin/posts/:id/edit',
+      name: 'admin-post-edit',
+      component: () => import('@/views/admin/AdminPostEditView.vue'),
+      meta: { requiresAdmin: true },
+    },
+    {
+      path: '/admin/categories',
+      name: 'admin-categories',
+      component: () => import('@/views/admin/AdminTaxonomyView.vue'),
+      props: { kind: 'category' as const },
+      meta: { requiresAdmin: true },
+    },
+    {
+      path: '/admin/tags',
+      name: 'admin-tags',
+      component: () => import('@/views/admin/AdminTaxonomyView.vue'),
+      props: { kind: 'tag' as const },
+      meta: { requiresAdmin: true },
     },
     {
       path: '/:pathMatch(.*)*',
@@ -66,6 +108,17 @@ const router = createRouter({
       component: () => import('@/views/NotFoundView.vue'),
     },
   ],
+})
+
+// 管理端路由守卫:未登录或会话失效时引导到登录页(FR-AUTH-003/005)
+router.beforeEach(async (to) => {
+  if (to.meta.requiresAdmin !== true) return true
+  const auth = useAuthStore()
+  if (!auth.checked) await auth.restore()
+  if (auth.username === null) {
+    return { name: 'admin-login', query: to.fullPath ? { redirect: to.fullPath } : {} }
+  }
+  return true
 })
 
 export default router

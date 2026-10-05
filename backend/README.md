@@ -2,6 +2,17 @@
 
 FastAPI + SQLAlchemy 2 + MySQL 8.4 的后端服务,用 [uv](https://docs.astral.sh/uv/) 管理依赖。
 
+## 管理端
+
+创建或重置管理员账户(密码至少 8 位):
+
+```bash
+uv run python -m app.create_admin <用户名>
+```
+
+- 管理端 API 全部在 `/api/admin/*`,由签名会话 Cookie(`SECRET_KEY`)保护。
+- 登录连续失败 5 次会触发 15 分钟的限制(NFR-SEC-009)。
+
 ## 首次配置
 
 1. 创建数据库和专用用户(在 MySQL 中执行;密码请自行替换):

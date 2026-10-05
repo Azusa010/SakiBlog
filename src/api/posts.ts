@@ -38,13 +38,15 @@ export interface PostList {
   page_size: number
 }
 
-/** 后端返回非 2xx 时抛出;status 可用于区分 404 与其他错误。 */
+/** 后端返回非 2xx 时抛出;status 用于区分 404,message 优先采用后端 detail。 */
 export class ApiError extends Error {
   status: number
+  detail: unknown
 
-  constructor(status: number) {
-    super(`API request failed with status ${status}`)
+  constructor(status: number, detail?: unknown) {
+    super(typeof detail === 'string' ? detail : `API request failed with status ${status}`)
     this.status = status
+    this.detail = detail
   }
 }
 
@@ -58,7 +60,9 @@ async function request<T>(path: string): Promise<T> {
     throw new Error('网络错误,无法连接服务器')
   }
   if (!response.ok) {
-    throw new ApiError(response.status)
+    const body: unknown = await response.json().catch(() => null)
+    const detail = (body as { detail?: unknown } | null)?.detail
+    throw new ApiError(response.status, detail)
   }
   return (await response.json()) as T
 }
