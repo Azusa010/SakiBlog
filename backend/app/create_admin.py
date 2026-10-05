@@ -1,8 +1,9 @@
 """创建或重置管理员账户(SRS §2.3.2:第一阶段仅一个管理员,无自助注册)。
 
 用法(在 backend/ 目录):
-    uv run python -m app.create_admin <用户名>
-执行后按提示输入密码(至少 8 位);用户名已存在时重置其密码。
+    uv run python -m app.create_admin <用户名>                # 交互式输入密码
+    uv run python -m app.create_admin <用户名> <密码>        # 非交互(密码会留在 shell 历史,谨慎使用)
+密码至少 8 位;用户名已存在时重置其密码。
 """
 
 import getpass
@@ -16,11 +17,14 @@ from app.security import hash_password
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
+    if len(sys.argv) not in (2, 3):
         print(__doc__)
         raise SystemExit(1)
     username = sys.argv[1]
-    password = getpass.getpass("密码(至少 8 位): ")
+    if len(sys.argv) == 3:
+        password = sys.argv[2]
+    else:
+        password = getpass.getpass("密码(至少 8 位): ")
     if len(password) < 8:
         raise SystemExit("密码至少 8 位")
 
