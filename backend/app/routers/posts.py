@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database import get_session
@@ -11,6 +11,7 @@ from app.schemas import (
     PostDetail,
     PostList,
     PostListItem,
+    PostNeighbor,
     SearchResult,
     TagWithCount,
 )
@@ -56,13 +57,48 @@ def list_posts(
     )
 
 
+def _neighbor(session: Session, article: Article, direction: str) -> PostNeighbor | None:
+    """已发布文章的相邻一篇:direction='prev' 取更早的,'next' 取更新的(FR-ARTICLE-006)。
+
+    排序键与列表一致:(published_at, id)。同秒发布时用 id 决胜负。
+    """
+    if article.published_at is None:
+        return None
+    if direction == "prev":
+        bound = or_(
+            Article.published_at < article.published_at,
+            and_(Article.published_at == article.published_at, Article.id < article.id),
+        )
+        order = (Article.published_at.desc(), Article.id.desc())
+    else:
+        bound = or_(
+            Article.published_at > article.published_at,
+            and_(Article.published_at == article.published_at, Article.id > article.id),
+        )
+        order = (Article.published_at.asc(), Article.id.asc())
+    row = session.execute(
+        select(Article.id, Article.title)
+        .where(Article.status == PublishStatus.published, bound)
+        .order_by(*order)
+        .limit(1)
+    ).first()
+    return PostNeighbor(id=row.id, title=row.title) if row else None
+
+
 @router.get("/posts/{post_id}", response_model=PostDetail)
 def get_post(post_id: int, session: SessionDep) -> PostDetail:
     # 草稿/已撤回文章对访客一律 404,绝不泄露内容(FR-ARTICLE-008 / NFR-SEC-006)
     article = session.get(Article, post_id)
     if article is None or article.status != PublishStatus.published:
         raise HTTPException(status_code=404, detail="post not found")
-    return PostDetail.model_validate(article)
+    detail = PostListItem.model_validate(article).model_dump()
+    return PostDetail(
+        **detail,
+        content=article.content,
+        updated_at=article.updated_at,
+        prev=_neighbor(session, article, "prev"),
+        next=_neighbor(session, article, "next"),
+    )
 
 
 @router.get("/search", response_model=SearchResult)

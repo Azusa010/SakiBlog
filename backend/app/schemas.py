@@ -33,9 +33,17 @@ class PostListItem(BaseModel):
     tags: list[TagBrief] = []
 
 
+class PostNeighbor(BaseModel):
+    id: int
+    title: str
+
+
 class PostDetail(PostListItem):
     content: str
     updated_at: datetime
+    # 上一篇(更早)/下一篇(更新),不存在时为 null,前端不渲染无效链接(FR-ARTICLE-006)
+    prev: PostNeighbor | None = None
+    next: PostNeighbor | None = None
 
 
 class PostList(BaseModel):
@@ -97,6 +105,7 @@ class AdminPostSummary(BaseModel):
 
     id: int
     title: str
+    summary: str
     status: PublishStatus
     version: int
     created_at: datetime

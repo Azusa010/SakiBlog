@@ -49,3 +49,14 @@ def test_draft_withdrawn_and_missing_are_404(client, seed):
     for post_id in (seed["draft"], seed["withdrawn"], 99999):
         resp = client.get(f"/api/posts/{post_id}")
         assert resp.status_code == 404
+
+
+def test_post_detail_has_published_neighbors(client, seed):
+    # 种子发布顺序:第一篇(1月) < 第二篇(2月) < 第三篇(3月)
+    middle = client.get(f"/api/posts/{seed['published'][1]}").json()
+    assert middle["prev"]["id"] == seed["published"][0]
+    assert middle["next"]["id"] == seed["published"][2]
+
+    oldest = client.get(f"/api/posts/{seed['published'][0]}").json()
+    assert oldest["prev"] is None  # 没有更早的就不渲染无效链接
+    assert oldest["next"]["id"] == seed["published"][1]
