@@ -34,11 +34,12 @@ def client(fresh_db):
 
 @pytest.fixture()
 def seed(fresh_db):
-    """1 个分类、2 个标签、3 篇已发布 + 1 草稿 + 1 已撤回。返回各篇文章 id。"""
+    """1 个有文章的分类、1 个空分类、2 个标签、3 篇已发布 + 1 草稿 + 1 已撤回。"""
     with SessionLocal() as s:
         cat = Category(name="技术")
+        empty_cat = Category(name="生活")
         t1, t2 = Tag(name="fastapi"), Tag(name="vue")
-        s.add_all([cat, t1, t2])
+        s.add_all([cat, empty_cat, t1, t2])
         s.flush()
 
         def article(title, status, published_at, with_meta=False):
@@ -65,4 +66,11 @@ def seed(fresh_db):
         d = article("草稿", PublishStatus.draft, None)
         w = article("撤回", PublishStatus.withdrawn, datetime(2025, 12, 1))
         s.commit()
-        return {"published": [p1.id, p2.id, p3.id], "draft": d.id, "withdrawn": w.id}
+        return {
+            "published": [p1.id, p2.id, p3.id],
+            "draft": d.id,
+            "withdrawn": w.id,
+            "category_id": cat.id,
+            "empty_category_id": empty_cat.id,
+            "tag_ids": [t1.id, t2.id],
+        }

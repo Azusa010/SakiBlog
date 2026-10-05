@@ -40,3 +40,25 @@ class PostList(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class CategoryWithCount(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    article_count: int
+
+
+class TagWithCount(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    article_count: int
+
+
+class SearchResult(BaseModel):
+    query: str
+    total: int
+    items: list[PostListItem]
