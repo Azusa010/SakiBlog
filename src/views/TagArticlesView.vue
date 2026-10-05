@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { ApiError, fetchPostsOfTag, fetchTag, type PostSummary } from '@/api/posts'
+import { useCountUp } from '@/utils/countUp'
 import PostCard from '@/components/PostCard.vue'
 
 /**
@@ -26,6 +27,8 @@ async function load() {
 }
 
 watch(() => route.params.id, load, { immediate: true })
+
+const displayCount = useCountUp(computed(() => tag.value?.article_count ?? 0))
 </script>
 
 <template>
@@ -44,8 +47,8 @@ watch(() => route.params.id, load, { immediate: true })
     </div>
 
     <template v-else-if="tag">
-      <h1>标签:{{ tag.name }}</h1>
-      <p class="result-count">共 {{ tag.article_count }} 篇文章</p>
+      <h1 v-reveal="0">标签:{{ tag.name }}</h1>
+      <p v-reveal="1" class="result-count">共 {{ displayCount }} 篇文章</p>
 
       <div v-if="posts.length === 0" class="state-box">
         <p>该标签下暂无公开文章。</p>

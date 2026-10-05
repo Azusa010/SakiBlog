@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { fetchSearch, type SearchResult } from '@/api/posts'
+import { useCountUp } from '@/utils/countUp'
 import PostCard from '@/components/PostCard.vue'
 
 /**
@@ -26,6 +27,8 @@ async function load() {
 
 // 空关键词保持待输入状态,不发请求(FR-SEARCH-003)
 watch(query, (q) => (q ? load() : (status.value = 'idle')), { immediate: true })
+
+const displayTotal = useCountUp(computed(() => result.value?.total ?? 0))
 </script>
 
 <template>
@@ -42,7 +45,7 @@ watch(query, (q) => (q ? load() : (status.value = 'idle')), { immediate: true })
     </div>
 
     <template v-else-if="result">
-      <p class="result-count">关键词「{{ result.query }}」共匹配 {{ result.total }} 篇文章</p>
+      <p v-reveal="0" class="result-count">关键词「{{ result.query }}」共匹配 {{ displayTotal }} 篇文章</p>
 
       <div v-if="result.items.length === 0" class="state-box">
         <p>没有找到匹配的文章。</p>

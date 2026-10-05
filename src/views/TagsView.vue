@@ -34,7 +34,7 @@ onMounted(load)
     <p v-else-if="tags.length === 0" class="state-box">还没有任何标签。</p>
 
     <ul v-else class="taxonomy-list">
-      <li v-for="tag in tags" :key="tag.id">
+      <li v-for="(tag, index) in tags" :key="tag.id" v-reveal="index">
         <RouterLink :to="`/tags/${tag.id}`">{{ tag.name }}</RouterLink>
         <span class="count">{{ tag.article_count }} 篇</span>
       </li>

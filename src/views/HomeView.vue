@@ -26,11 +26,20 @@ onMounted(load)
 
 <template>
   <section>
-    <h1>SakiBlog</h1>
-    <p class="lead">一个用于学习前后端分离全栈工程的全栈练习项目。</p>
-    <RouterLink class="cta" to="/posts">浏览全部文章</RouterLink>
+    <h1 class="hero-title" aria-label="SakiBlog">
+      <span
+        v-for="(char, index) in 'SakiBlog'"
+        :key="index"
+        aria-hidden="true"
+        class="char"
+        :style="{ '--char-index': index }"
+        >{{ char }}</span
+      >
+    </h1>
+    <p v-reveal="4" class="lead">一个用于学习前后端分离全栈工程的全栈练习项目。</p>
+    <RouterLink v-reveal="5" class="cta" to="/posts">浏览全部文章</RouterLink>
 
-    <section v-if="state !== 'loading'" class="latest" aria-label="最新文章">
+    <section v-if="state !== 'loading'" v-reveal="6" class="latest" aria-label="最新文章">
       <h2>最新文章</h2>
 
       <p v-if="state === 'error'" class="state-note">
@@ -43,6 +52,33 @@ onMounted(load)
 </template>
 
 <style scoped>
+.hero-title {
+  overflow: hidden;
+}
+
+.hero-title .char {
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-title .char {
+    animation: char-in 0.55s var(--ease-out) both;
+    animation-delay: calc(var(--char-index) * 45ms);
+  }
+}
+
+@keyframes char-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5em);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .lead {
   color: var(--color-text-muted);
   font-size: 1.05rem;

@@ -10,7 +10,7 @@ defineProps<{
 </script>
 
 <template>
-  <article class="post-card">
+  <article v-reveal="index" class="post-card">
     <div class="post-head">
       <span v-if="index !== undefined" class="post-no" aria-hidden="true">
         {{ String(index + 1).padStart(2, '0') }}

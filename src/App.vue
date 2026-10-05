@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { currentTheme, saveTheme, type Theme } from '@/theme'
+import BootLoader from '@/components/BootLoader.vue'
 
 // FR-SEARCH-001/003:主要页面提供搜索入口,空关键词不触发导航
 const router = useRouter()
@@ -14,13 +15,31 @@ function submitSearch() {
   searchQuery.value = ''
 }
 
-// FR-THEME-003/004:手动切换主题并记忆偏好
+// FR-THEME-003/004:手动切换主题并记忆偏好;支持的浏览器走 View Transition 交叉淡化
 const theme = ref<Theme>(currentTheme())
+
+function prefersReducedMotion(): boolean {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+}
 
 function toggleTheme() {
   const next: Theme = theme.value === 'dark' ? 'light' : 'dark'
-  saveTheme(next)
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown }
+  if (!prefersReducedMotion() && typeof doc.startViewTransition === 'function') {
+    doc.startViewTransition(() => saveTheme(next))
+  } else {
+    saveTheme(next)
+  }
   theme.value = next
+}
+
+// boot 载入动画:每个会话首次进站出现;reduced-motion 用户直接跳过
+const BOOT_STORAGE_KEY = 'sakiblog:booted'
+const booting = ref(!sessionStorage.getItem(BOOT_STORAGE_KEY) && !prefersReducedMotion())
+
+function finishBoot() {
+  sessionStorage.setItem(BOOT_STORAGE_KEY, '1')
+  booting.value = false
 }
 </script>
 
@@ -60,11 +79,13 @@ function toggleTheme() {
     </header>
 
     <main class="site-main">
-      <!-- 缓存文章列表页,返回时保留筛选/分页/滚动状态(FR-LIST-006) -->
+      <!-- 缓存文章列表页,返回时保留筛选/分页/滚动状态(FR-LIST-006);路由轻量过渡 -->
       <RouterView v-slot="{ Component }">
-        <KeepAlive include="PostsView">
-          <component :is="Component" />
-        </KeepAlive>
+        <Transition name="route" mode="out-in">
+          <KeepAlive include="PostsView">
+            <component :is="Component" />
+          </KeepAlive>
+        </Transition>
       </RouterView>
     </main>
 
@@ -73,6 +94,10 @@ function toggleTheme() {
         © 2026 SAKIBLOG&nbsp;&nbsp;///&nbsp;&nbsp;REV 1.0&nbsp;&nbsp;///&nbsp;&nbsp;VUE 3 × FASTAPI × MYSQL
       </p>
     </footer>
+
+    <Transition name="boot">
+      <BootLoader v-if="booting" @done="finishBoot" />
+    </Transition>
   </div>
 </template>
 

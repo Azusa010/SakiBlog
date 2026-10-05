@@ -31,6 +31,9 @@
   /* 工业风格:所有直角 */
   --radius: 0;
   --content-width: 44rem;
+
+  /* 动效令牌:工业机械感 = 快出缓收 */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :root[data-theme='dark'] {
@@ -180,4 +183,68 @@ button {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ---------- 动效体系(MOTION_INTENSITY 8;全部尊重 prefers-reduced-motion) ---------- */
+
+/* 入场揭幕:v-reveal 指令驱动;初始隐藏仅在允许动效时生效 */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.5s var(--ease-out),
+      transform 0.5s var(--ease-out);
+  }
+
+  .reveal.reveal-in {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 路由切换:轻量淡入上移;boot 揭幕:整层上滑退场 */
+@media (prefers-reduced-motion: no-preference) {
+  .route-enter-active,
+  .route-leave-active {
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .route-enter-from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  .route-leave-to {
+    opacity: 0;
+  }
+
+  .boot-leave-active {
+    transition:
+      transform 0.35s var(--ease-out),
+      opacity 0.35s ease;
+  }
+
+  .boot-leave-to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+/* 物理按压反馈 */
+button:active {
+  transform: translateY(1px);
+}
+
+button {
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+a {
+  transition: color 0.15s ease;
 }

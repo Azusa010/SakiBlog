@@ -81,13 +81,13 @@ watch(() => route.params.id, load, { immediate: true })
 
     <template v-else-if="post">
       <h1>{{ post.title }}</h1>
-      <p class="post-meta">
+      <p v-reveal="0" class="post-meta">
         <time :datetime="post.published_at">{{ post.published_at.slice(0, 10) }}</time>
         <span v-if="post.category"> · {{ post.category.name }}</span>
         <span v-if="post.tags.length > 0"> · {{ post.tags.map((tag) => tag.name).join('、') }}</span>
       </p>
 
-      <nav v-if="toc.length > 0" class="toc" aria-label="文章目录">
+      <nav v-if="toc.length > 0" v-reveal="1" class="toc" aria-label="文章目录">
         <strong>目录</strong>
         <ol>
           <li v-for="heading in toc" :key="heading.id" :class="`level-${heading.level}`">
@@ -100,10 +100,11 @@ watch(() => route.params.id, load, { immediate: true })
 
       <!-- renderMarkdown 输出已转义原始 HTML,这里安全 -->
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <div ref="contentEl" class="post-content" v-html="renderedContent"></div>
+      <div ref="contentEl" v-reveal="2" class="post-content" v-html="renderedContent"></div>
 
       <nav
         v-if="post.prev || post.next"
+        v-reveal="3"
         class="post-neighbors"
         aria-label="上下篇"
       >

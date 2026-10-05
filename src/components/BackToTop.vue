@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-/** 返回顶部(FR-ARTICLE-007):滚动超过一个视口后出现。 */
+/**
+ * 返回顶部(FR-ARTICLE-007):滚动超过一个视口后出现。
+ * 用 IntersectionObserver 观察视口下缘外的哨兵元素,不挂 scroll 监听。
+ */
 const visible = ref(false)
-
-function onScroll() {
-  visible.value = window.scrollY > window.innerHeight
-}
 
 function toTop() {
   const reduced =
@@ -14,13 +13,24 @@ function toTop() {
   window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })
 }
 
+let observer: IntersectionObserver | null = null
+let marker: HTMLElement | null = null
+
 onMounted(() => {
-  window.addEventListener('scroll', onScroll, { passive: true })
-  onScroll()
+  if (typeof IntersectionObserver !== 'function') return
+  marker = document.createElement('div')
+  marker.style.cssText = 'position:absolute;top:calc(100vh + 1px);left:0;width:0;height:0;'
+  document.body.appendChild(marker)
+  observer = new IntersectionObserver((entries) => {
+    visible.value = entries[0]?.isIntersecting ?? false
+  })
+  observer.observe(marker)
 })
 
-onUnmounted(() => {
-  window.removeEventListener('scroll', onScroll)
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  marker?.remove()
+  marker = null
 })
 </script>
 

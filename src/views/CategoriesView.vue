@@ -34,7 +34,7 @@ onMounted(load)
     <p v-else-if="categories.length === 0" class="state-box">还没有任何分类。</p>
 
     <ul v-else class="taxonomy-list">
-      <li v-for="category in categories" :key="category.id">
+      <li v-for="(category, index) in categories" :key="category.id" v-reveal="index">
         <RouterLink :to="`/categories/${category.id}`">{{ category.name }}</RouterLink>
         <span class="count">{{ category.article_count }} 篇</span>
       </li>
