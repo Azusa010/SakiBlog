@@ -36,16 +36,16 @@ onUnmounted(() => {
   width: 2.5rem;
   height: 2.5rem;
   border: 1px solid var(--color-border);
-  border-radius: 50%;
   background: var(--color-surface);
   color: var(--color-text);
+  font-family: var(--font-mono);
   font-size: 1.1rem;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
 }
 
 .back-top:hover {
   border-color: var(--color-accent);
   color: var(--color-accent);
+  background: var(--color-bg);
 }
 </style>

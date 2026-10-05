@@ -234,7 +234,9 @@ async function remove(item: TaxonomyItem) {
 
 .count {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
 }
 
 .state-box {

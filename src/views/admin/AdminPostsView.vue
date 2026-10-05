@@ -198,7 +198,9 @@ async function act(post: AdminPostSummary, action: 'publish' | 'withdraw' | 'del
 .meta {
   display: block;
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
 }
 
 .badge {
@@ -206,8 +208,9 @@ async function act(post: AdminPostSummary, action: 'publish' | 'withdraw' | 'del
   margin-right: var(--space-2);
   padding: 0 var(--space-2);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
 }
 
 .badge[data-status='published'] {

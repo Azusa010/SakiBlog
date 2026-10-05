@@ -138,7 +138,9 @@ watch(() => route.params.id, load, { immediate: true })
 
 .post-meta {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
 }
 
 .back-link {
@@ -150,17 +152,33 @@ watch(() => route.params.id, load, { immediate: true })
   margin: var(--space-4) 0 var(--space-6);
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  border-left: 4px solid var(--color-accent);
   background: var(--color-surface);
 }
 
 .toc strong {
-  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .toc ol {
   margin: var(--space-2) 0 0;
   padding-left: var(--space-6);
+}
+
+.toc li {
+  font-size: 0.9375rem;
+}
+
+.toc a {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.toc a:hover {
+  color: var(--color-accent);
 }
 
 .toc li.level-3 {
@@ -184,5 +202,18 @@ watch(() => route.params.id, load, { immediate: true })
 .neighbor {
   max-width: 48%;
   overflow-wrap: anywhere;
+}
+
+/* 正文内容可读性优先:Markdown 标题豁免页面级的大写/压缩装饰(NFR-USE-003) */
+.post-content :deep(h1),
+.post-content :deep(h2),
+.post-content :deep(h3),
+.post-content :deep(h4) {
+  text-transform: none;
+  letter-spacing: normal;
+  border-bottom: none;
+  padding-bottom: 0;
+  font-size: 1.375rem;
+  margin-top: var(--space-8);
 }
 </style>

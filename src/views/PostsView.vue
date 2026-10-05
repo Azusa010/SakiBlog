@@ -63,7 +63,7 @@ watch(page, load, { immediate: true })
     <p v-else-if="posts.length === 0" class="state-box">还没有已发布的文章。</p>
 
     <template v-else>
-      <PostCard v-for="post in posts" :key="post.id" :post="post" />
+      <PostCard v-for="(post, index) in posts" :key="post.id" :post="post" :index="index" />
 
       <nav v-if="totalPages > 1" class="pagination" aria-label="分页">
         <button type="button" :disabled="page <= 1" @click="goPage(page - 1)">上一页</button>

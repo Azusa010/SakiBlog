@@ -51,7 +51,7 @@ watch(() => route.params.id, load, { immediate: true })
         <p>该分类下暂无公开文章。</p>
         <p><RouterLink to="/posts">浏览全部文章</RouterLink> 或 <RouterLink to="/categories">返回分类集合</RouterLink></p>
       </div>
-      <PostCard v-for="post in posts" v-else :key="post.id" :post="post" />
+      <PostCard v-for="(post, index) in posts" v-else :key="post.id" :post="post" :index="index" />
     </template>
   </section>
 </template>
@@ -59,7 +59,9 @@ watch(() => route.params.id, load, { immediate: true })
 <style scoped>
 .result-count {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
 }
 
 .state-box {

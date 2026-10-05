@@ -37,7 +37,7 @@ onMounted(load)
         最新文章加载失败,<button type="button" class="retry" @click="load">重试</button>
       </p>
       <p v-else-if="posts.length === 0" class="state-note">还没有已发布的文章,敬请期待。</p>
-      <PostCard v-for="post in posts" :key="post.id" :post="post" />
+      <PostCard v-for="(post, index) in posts" :key="post.id" :post="post" :index="index" />
     </section>
   </section>
 </template>
