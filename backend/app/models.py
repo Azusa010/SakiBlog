@@ -72,7 +72,7 @@ class Article(Base):
     status: Mapped[PublishStatus] = mapped_column(SAEnum(PublishStatus), default=PublishStatus.draft)
     cover_image: Mapped[str | None] = mapped_column(String(500))
     reading_minutes: Mapped[int | None]
-    version: Mapped[int] = mapped_column(default=1)
+    version: Mapped[int] = mapped_column(default=1, server_default="1")
     category_id: Mapped[int | None] = mapped_column(ForeignKey("category.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
