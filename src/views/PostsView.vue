@@ -4,6 +4,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { fetchPosts, type PostSummary } from '@/api/posts'
 import PostCard from '@/components/PostCard.vue'
 
+defineOptions({
+  // 与 App.vue 的 KeepAlive include 对应(FR-LIST-006 状态恢复)
+  name: 'PostsView',
+})
+
 /**
  * 文章列表页(SRS FR-LIST-001 ~ FR-LIST-004):
  * 已发布文章按发布时间从新到旧,分页状态放在 URL 查询参数里便于回退与分享。

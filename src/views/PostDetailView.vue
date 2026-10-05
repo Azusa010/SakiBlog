@@ -1,19 +1,55 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { ApiError, fetchPost, type PostDetail as PostDetailData } from '@/api/posts'
 import { renderMarkdown } from '@/markdown'
+import BackToTop from '@/components/BackToTop.vue'
 
 /**
- * 文章详情页(SRS FR-ARTICLE-001/002/008):
- * 展示标题、发布时间与 Markdown 正文;无效或不公开的文章显示未找到状态。
+ * 文章详情页(SRS FR-ARTICLE-001 ~ 008):
+ * 标题、发布时间、Markdown 正文、文章目录、上下篇导航与未找到状态。
  */
 const route = useRoute()
 
 const post = ref<PostDetailData | null>(null)
 const status = ref<'loading' | 'ready' | 'error' | 'not-found'>('loading')
+const contentEl = ref<HTMLElement | null>(null)
 
 const renderedContent = computed(() => (post.value ? renderMarkdown(post.value.content) : ''))
+
+// 目录(FR-ARTICLE-005):正文含二级或更深层级标题时提供,点击定位到对应标题
+interface TocItem {
+  id: string
+  text: string
+  level: number
+}
+
+const toc = computed<TocItem[]>(() => {
+  if (!post.value) return []
+  const doc = new DOMParser().parseFromString(renderedContent.value, 'text/html')
+  return Array.from(doc.querySelectorAll('h2, h3, h4')).map((el, index) => ({
+    id: `heading-${index}`,
+    text: el.textContent ?? '',
+    level: Number(el.tagName[1]),
+  }))
+})
+
+// 给实际渲染出的标题写上与目录一致的锚点 id
+watch(renderedContent, async () => {
+  await nextTick()
+  contentEl.value
+    ?.querySelectorAll('h2, h3, h4')
+    .forEach((el, index) => el.setAttribute('id', `heading-${index}`))
+})
+
+function scrollToHeading(id: string) {
+  const reduced =
+    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+  document.getElementById(id)?.scrollIntoView({
+    behavior: reduced ? 'auto' : 'smooth',
+    block: 'start',
+  })
+}
 
 async function load() {
   status.value = 'loading'
@@ -50,11 +86,38 @@ watch(() => route.params.id, load, { immediate: true })
         <span v-if="post.category"> · {{ post.category.name }}</span>
         <span v-if="post.tags.length > 0"> · {{ post.tags.map((tag) => tag.name).join('、') }}</span>
       </p>
-      <!-- markdown-it 输出已转义原始 HTML,这里安全 -->
+
+      <nav v-if="toc.length > 0" class="toc" aria-label="文章目录">
+        <strong>目录</strong>
+        <ol>
+          <li v-for="heading in toc" :key="heading.id" :class="`level-${heading.level}`">
+            <a :href="`#${heading.id}`" @click.prevent="scrollToHeading(heading.id)">
+              {{ heading.text }}
+            </a>
+          </li>
+        </ol>
+      </nav>
+
+      <!-- renderMarkdown 输出已转义原始 HTML,这里安全 -->
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <div class="post-content" v-html="renderedContent"></div>
+      <div ref="contentEl" class="post-content" v-html="renderedContent"></div>
+
+      <nav
+        v-if="post.prev || post.next"
+        class="post-neighbors"
+        aria-label="上下篇"
+      >
+        <RouterLink v-if="post.prev" :to="`/posts/${post.prev.id}`" class="neighbor">
+          ← {{ post.prev.title }}
+        </RouterLink>
+        <span v-else aria-hidden="true"></span>
+        <RouterLink v-if="post.next" :to="`/posts/${post.next.id}`" class="neighbor">
+          {{ post.next.title }} →
+        </RouterLink>
+      </nav>
 
       <p class="back-link"><RouterLink to="/posts">← 返回文章列表</RouterLink></p>
+      <BackToTop />
     </template>
   </article>
 </template>
@@ -81,5 +144,45 @@ watch(() => route.params.id, load, { immediate: true })
 .back-link {
   margin-top: var(--space-8);
   font-size: 0.875rem;
+}
+
+.toc {
+  margin: var(--space-4) 0 var(--space-6);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.toc strong {
+  font-size: 0.875rem;
+}
+
+.toc ol {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-6);
+}
+
+.toc li.level-3 {
+  margin-left: var(--space-4);
+}
+
+.toc li.level-4 {
+  margin-left: var(--space-8);
+}
+
+.post-neighbors {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  font-size: 0.9375rem;
+}
+
+.neighbor {
+  max-width: 48%;
+  overflow-wrap: anywhere;
 }
 </style>

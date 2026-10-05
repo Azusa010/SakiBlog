@@ -58,7 +58,12 @@ function toggleTheme() {
     </header>
 
     <main class="site-main">
-      <RouterView />
+      <!-- 缓存文章列表页,返回时保留筛选/分页/滚动状态(FR-LIST-006) -->
+      <RouterView v-slot="{ Component }">
+        <KeepAlive include="PostsView">
+          <component :is="Component" />
+        </KeepAlive>
+      </RouterView>
     </main>
 
     <footer class="site-footer">

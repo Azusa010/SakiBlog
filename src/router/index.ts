@@ -15,8 +15,7 @@ import { useAuthStore } from '@/stores/auth'
  */
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
+  routes: [    {
       path: '/',
       name: 'home',
       component: () => import('@/views/HomeView.vue'),
@@ -108,6 +107,10 @@ const router = createRouter({
       component: () => import('@/views/NotFoundView.vue'),
     },
   ],
+  // 前进到新页面回到顶部;后退/前进时恢复浏览器记住的滚动位置(FR-LIST-006)
+  scrollBehavior(_to, _from, savedPosition) {
+    return savedPosition ?? { top: 0 }
+  },
 })
 
 // 管理端路由守卫:未登录或会话失效时引导到登录页(FR-AUTH-003/005)

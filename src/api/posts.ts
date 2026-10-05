@@ -26,9 +26,17 @@ export interface PostSummary {
   tags: TagBrief[]
 }
 
+export interface PostNeighbor {
+  id: number
+  title: string
+}
+
 export interface PostDetail extends PostSummary {
   content: string
   updated_at: string
+  /** 上一篇(更早)/下一篇(更新);为 null 时前端不渲染无效链接 */
+  prev: PostNeighbor | null
+  next: PostNeighbor | null
 }
 
 export interface PostList {
