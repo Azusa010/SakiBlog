@@ -8,6 +8,8 @@ class Settings(BaseSettings):
 
     database_url: str = "mysql+pymysql://sakiblog:sakiblog@localhost:3306/sakiblog"
     auto_create_tables: bool = True
+    # 签名会话 Cookie 的密钥;生产环境必须在 .env 里换掉
+    secret_key: str = "dev-secret-change-me"
     cors_origins: list[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",

@@ -2,7 +2,7 @@
  * SakiBlog 公开文章 API 客户端。
  *
  * 字段名保持与后端 JSON 一致(snake_case),不做转换层。
- * 后端地址可用 VITE_API_BASE_URL 覆盖,默认本地开发地址。
+ * 默认走同源(开发期由 Vite 代理 /api 到后端);可用 VITE_API_BASE_URL 覆盖。
  */
 
 export interface CategoryBrief {
@@ -48,7 +48,7 @@ export class ApiError extends Error {
   }
 }
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
+const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
 async function request<T>(path: string): Promise<T> {
   let response: Response

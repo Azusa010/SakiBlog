@@ -13,7 +13,7 @@ describe('posts api client', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(fetchPosts(2, 20)).resolves.toEqual(payload)
-    expect(fetchMock).toHaveBeenCalledWith('http://127.0.0.1:8000/api/posts?page=2&page_size=20')
+    expect(fetchMock).toHaveBeenCalledWith('/api/posts?page=2&page_size=20')
   })
 
   it('wraps network failures in a readable error', async () => {

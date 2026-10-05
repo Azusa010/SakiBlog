@@ -15,7 +15,8 @@ from fastapi.testclient import TestClient
 
 from app.database import SessionLocal, engine
 from app.main import app
-from app.models import Article, Base, Category, PublishStatus, Tag
+from app.models import Admin, Article, Base, Category, PublishStatus, Tag
+from app.security import hash_password, reset_login_guard
 
 
 @pytest.fixture()
@@ -30,6 +31,23 @@ def fresh_db():
 def client(fresh_db):
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture()
+def admin_user(fresh_db):
+    """创建管理员并清空登录防护计数(进程内状态跨测试残留)。"""
+    reset_login_guard()
+    with SessionLocal() as s:
+        s.add(Admin(username="admin", password_hash=hash_password("correct-horse"), status="active"))
+        s.commit()
+    yield
+
+
+@pytest.fixture()
+def admin_client(client, admin_user):
+    resp = client.post("/api/admin/login", json={"username": "admin", "password": "correct-horse"})
+    assert resp.status_code == 200
+    return client
 
 
 @pytest.fixture()

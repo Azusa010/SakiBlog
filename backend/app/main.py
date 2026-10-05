@@ -9,7 +9,8 @@ from sqlalchemy.exc import OperationalError
 from app.config import get_settings
 from app.database import SessionLocal, engine
 from app.models import Base
-from app.routers import posts
+from app.routers import admin, posts
+from starlette.middleware.sessions import SessionMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="SakiBlog API", lifespan=lifespan)
 
+# Session 先加(CORS 需保持最外层,后添加的中间件在外层)
+app.add_middleware(SessionMiddleware, secret_key=get_settings().secret_key, max_age=7 * 24 * 3600)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_settings().cors_origins,
@@ -36,6 +39,7 @@ app.add_middleware(
 )
 
 app.include_router(posts.router)
+app.include_router(admin.router)
 
 
 @app.get("/api/health", tags=["health"])
