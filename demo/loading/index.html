@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SakiBlog — Loading Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #edf1f6;
+      --text: #101a2b;
+      --muted: #5c6d84;
+      --line: rgba(16, 40, 80, 0.1);
+      --cyan: #00b4d8;
+      --mag: #ff2d95;
+      --blue: #3b82f6;
+      --mono: "JetBrains Mono", "SF Mono", "Cascadia Code", ui-monospace, Menlo, Consolas, monospace;
+      --sans: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+    }
+
+    body { overflow-x: hidden; }
+    body.is-loading { overflow: hidden; }
+
+    a { color: var(--muted); text-decoration: none; transition: color .2s; }
+    a:hover { color: var(--cyan); }
+
+    .app {
+      min-height: 100vh;
+      padding: 1.5rem clamp(1.25rem, 5vw, 3.5rem) 5rem;
+      max-width: 920px;
+      margin: 0 auto;
+      background: linear-gradient(180deg, #f7f9fc, var(--bg));
+    }
+
+    .nav {
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      padding-bottom: 1.25rem; border-bottom: 1px solid var(--line); margin-bottom: 2.75rem;
+    }
+
+    .nav__brand {
+      font-family: var(--mono); font-weight: 600; letter-spacing: .14em;
+      font-size: .9rem; color: #2563eb;
+    }
+
+    .nav__links {
+      display: flex; gap: 1.35rem; font-size: .86rem;
+      font-family: var(--mono); letter-spacing: .04em;
+    }
+
+    .hero__eyebrow {
+      color: var(--cyan); font-family: var(--mono); font-size: .68rem;
+      letter-spacing: .28em; text-transform: uppercase; margin-bottom: 1rem;
+    }
+
+    .hero__title {
+      font-size: clamp(1.85rem, 4.5vw, 2.75rem); font-weight: 650;
+      line-height: 1.15; letter-spacing: -.025em; margin-bottom: 1rem;
+    }
+
+    .hero__lead {
+      color: var(--muted); max-width: 34rem; line-height: 1.65;
+      margin-bottom: 2.75rem; font-size: 1.02rem;
+    }
+
+    .cards { display: grid; gap: 1rem; }
+
+    .card {
+      background: rgba(255,255,255,.9); border: 1px solid var(--line);
+      border-radius: 4px; padding: 1.35rem 1.45rem;
+      transition: border-color .2s, transform .2s;
+    }
+
+    .card:hover { border-color: rgba(0,180,216,.35); transform: translateY(-1px); }
+    .card time {
+      display: block; font-family: var(--mono); font-size: .7rem;
+      color: var(--muted); letter-spacing: .08em; margin-bottom: .55rem;
+    }
+    .card h2 { font-size: 1.08rem; font-weight: 600; margin-bottom: .45rem; }
+    .card p { color: var(--muted); font-size: .92rem; line-height: 1.6; }
+
+    .btn {
+      appearance: none; border: 1px solid rgba(59,130,246,.28); background: #fff;
+      color: #243447; font-family: var(--mono); font-size: .68rem;
+      letter-spacing: .14em; text-transform: uppercase; padding: .6rem 1.1rem;
+      border-radius: 2px; cursor: pointer;
+      clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+      transition: border-color .2s, color .2s, background .2s;
+    }
+
+    .btn:hover { border-color: var(--cyan); color: var(--cyan); background: #f0fbfd; }
+    .btn--replay { position: fixed; right: 1.35rem; bottom: 1.35rem; z-index: 5; }
+
+    /* ── loader ── */
+    .loader {
+      position: fixed; inset: 0; z-index: 1000;
+      background: #e8eef5;
+      opacity: 0;
+      transition: opacity .7s cubic-bezier(.4,0,.2,1);
+      animation: enter .35s ease-out forwards;
+      overflow: hidden;
+    }
+
+    .loader.is-exiting { opacity: 0; pointer-events: none; animation: none; }
+    .loader.is-hidden { display: none; }
+
+    /* webgl + RGB ghost layers for bg glitch */
+    .stage {
+      position: absolute;
+      inset: 0;
+    }
+
+    #webgl {
+      position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+      opacity: .92;
+    }
+
+    .stage__ghost {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      mix-blend-mode: multiply;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 180, 216, 0.03) 2px,
+          rgba(0, 180, 216, 0.03) 4px
+        );
+    }
+
+    .stage__ghost--a {
+      background-color: rgba(0, 180, 216, 0.08);
+    }
+
+    .stage__ghost--b {
+      background-color: rgba(255, 45, 149, 0.07);
+    }
+
+    .stage.is-glitch #webgl {
+      filter:
+        drop-shadow(2px 0 0 rgba(0, 180, 216, 0.45))
+        drop-shadow(-2px 0 0 rgba(255, 45, 149, 0.4));
+    }
+
+    .stage.is-glitch .stage__ghost--a {
+      opacity: 1;
+      transform: translate(3px, -1px);
+      mix-blend-mode: screen;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          transparent 0 3px,
+          rgba(0, 180, 216, 0.06) 3px 4px
+        ),
+        rgba(0, 180, 216, 0.05);
+    }
+
+    .stage.is-glitch .stage__ghost--b {
+      opacity: 1;
+      transform: translate(-3px, 1px);
+      mix-blend-mode: multiply;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent 0 5px,
+          rgba(255, 45, 149, 0.05) 5px 6px
+        ),
+        rgba(255, 45, 149, 0.04);
+    }
+
+    .stage.is-glitch.hard #webgl {
+      transform: translateX(var(--gx, 0px)) skewX(var(--gsk, 0deg));
+      clip-path: polygon(
+        0 var(--cs1, 0%), 100% var(--cs1, 0%),
+        100% var(--cs2, 35%), 0 var(--cs2, 35%),
+        0 var(--cs3, 35%), 100% var(--cs3, 35%),
+        100% var(--cs4, 100%), 0 var(--cs4, 100%)
+      );
+    }
+
+    /* floating bg scramble glyphs */
+    .bg-noise {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: rgba(37, 99, 235, 0.14);
+      overflow: hidden;
+      opacity: 0.55;
+      line-height: 1.4;
+      white-space: pre;
+      padding: 0.5rem;
+    }
+
+    .stage.is-glitch .bg-noise {
+      opacity: 0.9;
+      color: rgba(0, 180, 216, 0.28);
+      text-shadow: 2px 0 rgba(255, 45, 149, 0.25), -2px 0 rgba(0, 180, 216, 0.2);
+      transform: translateX(var(--nx, 0px));
+    }
+
+    .hud {
+      position: absolute; inset: 0; z-index: 2;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 1.25rem;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 55% 45% at 50% 48%, rgba(232,238,245,.5) 0%, rgba(232,238,245,.1) 45%, transparent 70%);
+    }
+
+    .hud.is-glitch {
+      transform: translate(var(--hx, 0px), var(--hy, 0px));
+    }
+
+    .hud__corners { position: absolute; inset: 1.15rem; }
+    .hud__corners i {
+      position: absolute; width: 22px; height: 22px;
+      border: 0 solid rgba(0,180,216,.5);
+    }
+    .hud__corners i:nth-child(1) { top:0; left:0; border-top-width:2px; border-left-width:2px; }
+    .hud__corners i:nth-child(2) { top:0; right:0; border-top-width:2px; border-right-width:2px; }
+    .hud__corners i:nth-child(3) { bottom:0; left:0; border-bottom-width:2px; border-left-width:2px; }
+    .hud__corners i:nth-child(4) { bottom:0; right:0; border-bottom-width:2px; border-right-width:2px; }
+
+    .panel {
+      pointer-events: auto;
+      width: min(100%, 22rem);
+      text-align: center;
+      padding: 1.25rem 1rem 1.1rem;
+    }
+
+    /* dual-layer glitch text */
+    .gtext {
+      position: relative;
+      display: inline-block;
+    }
+
+    .gtext .main { position: relative; z-index: 1; }
+    .gtext .ghost {
+      position: absolute;
+      left: 0; top: 0;
+      width: 100%;
+      opacity: 0;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .gtext.is-scrambling .main {
+      text-shadow: 1px 0 rgba(255,45,149,.45), -1px 0 rgba(0,180,216,.4);
+    }
+
+    .gtext.is-scrambling .ghost {
+      opacity: .55;
+    }
+
+    .gtext.is-scrambling .ghost--a {
+      color: var(--cyan);
+      transform: translate(2px, -1px);
+      mix-blend-mode: multiply;
+    }
+
+    .gtext.is-scrambling .ghost--b {
+      color: var(--mag);
+      transform: translate(-2px, 1px);
+      opacity: .4;
+      mix-blend-mode: multiply;
+    }
+
+    .brand {
+      font-family: var(--mono);
+      font-size: clamp(1.25rem, 3.8vw, 1.65rem);
+      font-weight: 700;
+      letter-spacing: .38em;
+      text-indent: .38em;
+      text-transform: uppercase;
+      color: #0f1b2e;
+      margin-bottom: .55rem;
+    }
+
+    .brand .ghost { text-indent: .38em; letter-spacing: .38em; }
+
+    .sub {
+      font-family: var(--mono);
+      font-size: .62rem;
+      letter-spacing: .24em;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+      min-height: 1.1em;
+    }
+
+    .sub .ghost { letter-spacing: .24em; }
+
+    .prog {
+      position: relative;
+      width: 100%;
+      margin: 0 auto 1rem;
+    }
+
+    .prog__track {
+      position: relative;
+      height: 3px;
+      background: rgba(15,40,80,.1);
+      overflow: hidden;
+    }
+
+    .prog__track::before,
+    .prog__track::after {
+      content: "";
+      position: absolute;
+      top: -4px;
+      width: 2px;
+      height: 11px;
+      background: var(--cyan);
+    }
+    .prog__track::before { left: 0; }
+    .prog__track::after { right: 0; }
+
+    .prog__bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--cyan), var(--blue) 55%, var(--mag));
+      box-shadow: 0 0 12px rgba(0,180,216,.35);
+      transition: width .05s linear;
+      position: relative;
+    }
+
+    .prog__bar::after {
+      content: "";
+      position: absolute;
+      right: 0; top: 50%;
+      width: 2px; height: 10px;
+      margin-top: -5px;
+      background: #fff;
+      box-shadow: 0 0 8px var(--cyan);
+    }
+
+    .prog.is-scrambling .prog__bar {
+      filter: hue-rotate(40deg) saturate(1.4);
+      transform: translateX(var(--bx, 0px));
+    }
+
+    .prog__readout {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-top: .7rem;
+      font-family: var(--mono);
+      font-size: .72rem;
+      letter-spacing: .08em;
+      color: var(--muted);
+    }
+
+    .prog__label {
+      letter-spacing: .16em;
+      font-size: .6rem;
+      min-width: 6ch;
+      text-align: left;
+    }
+
+    .prog__pct {
+      min-width: 7.5ch;
+      text-align: right;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      color: #0f1b2e;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .prog__pct .ghost { text-align: right; }
+
+    .noise-line {
+      font-family: var(--mono);
+      font-size: .58rem;
+      letter-spacing: .18em;
+      color: rgba(92,109,132,.55);
+      min-height: 1.2em;
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .noise-line.is-scrambling {
+      color: var(--cyan);
+      text-shadow: 2px 0 rgba(255,45,149,.35), -2px 0 rgba(0,180,216,.3);
+    }
+
+    .btn--skip {
+      opacity: .75; font-size: .6rem; background: rgba(255,255,255,.85);
+    }
+    .btn--skip:hover { opacity: 1; }
+
+    .loader.is-complete .panel { animation: flash .4s ease-out forwards; }
+
+    @keyframes enter { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes flash {
+      0% { opacity: 1; filter: brightness(1); }
+      40% { opacity: 1; filter: brightness(1.25); }
+      55% { transform: translateX(-3px); }
+      70% { transform: translateX(2px); }
+      100% { opacity: .2; filter: brightness(1.4); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .loader { animation: none; opacity: 1; transition-duration: .15s; }
+      .prog__bar { transition: none; }
+      .loader.is-complete .panel { animation: none; }
+      .stage.is-glitch #webgl,
+      .stage.is-glitch .stage__ghost,
+      .stage.is-glitch .bg-noise { filter: none !important; transform: none !important; opacity: 0 !important; }
+      .stage.is-glitch #webgl { opacity: .92 !important; }
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.module.js"
+    }
+  }
+  </script>
+</head>
+<body class="is-loading">
+  <div id="app" class="app" aria-hidden="true">
+    <header class="nav">
+      <div class="nav__brand">SAKIBLOG</div>
+      <nav class="nav__links">
+        <a href="#">Home</a>
+        <a href="#">Archive</a>
+        <a href="#">About</a>
+      </nav>
+    </header>
+    <main>
+      <section class="hero">
+        <p class="hero__eyebrow">Signal acquired</p>
+        <h1 class="hero__title">Notes from the edge of the network</h1>
+        <p class="hero__lead">A quiet place for long-form writing, systems thinking, and late-night experiments.</p>
+      </section>
+      <section class="cards">
+        <article class="card">
+          <time datetime="2026-07-18">2026.07.18</time>
+          <h2>Building a personal blog from scratch</h2>
+          <p>Vue on the front, FastAPI on the back, and a lot of intentional choices in between.</p>
+        </article>
+        <article class="card">
+          <time datetime="2026-07-10">2026.07.10</time>
+          <h2>Why loading states matter</h2>
+          <p>First impressions are often waiting. Make the wait feel deliberate.</p>
+        </article>
+        <article class="card">
+          <time datetime="2026-07-01">2026.07.01</time>
+          <h2>Circuits, grids, and quiet pages</h2>
+          <p>Sometimes the journey into the page is part of the design.</p>
+        </article>
+      </section>
+    </main>
+    <button type="button" id="btn-replay" class="btn btn--replay" hidden>Replay</button>
+  </div>
+
+  <div id="loader" class="loader" role="status" aria-live="polite" aria-busy="true">
+    <div class="stage" id="stage">
+      <canvas id="webgl"></canvas>
+      <div class="stage__ghost stage__ghost--a"></div>
+      <div class="stage__ghost stage__ghost--b"></div>
+      <pre class="bg-noise" id="bg-noise" aria-hidden="true"></pre>
+    </div>
+
+    <div class="hud" id="hud">
+      <div class="hud__corners"><i></i><i></i><i></i><i></i></div>
+      <div class="panel">
+        <div class="brand gtext" id="brand">
+          <span class="main" id="brand-main">SakiBlog</span>
+          <span class="ghost ghost--a" id="brand-ga" aria-hidden="true"></span>
+          <span class="ghost ghost--b" id="brand-gb" aria-hidden="true"></span>
+        </div>
+
+        <div class="sub gtext" id="sub-wrap">
+          <span class="main" id="loader-sub">INITIALIZING</span>
+          <span class="ghost ghost--a" id="sub-ga" aria-hidden="true"></span>
+          <span class="ghost ghost--b" id="sub-gb" aria-hidden="true"></span>
+        </div>
+
+        <div class="prog" id="prog">
+          <div class="prog__track">
+            <div class="prog__bar" id="progress-bar" style="width:0%"></div>
+          </div>
+          <div class="prog__readout">
+            <span class="prog__label gtext" id="status-wrap">
+              <span class="main" id="loader-status">BOOT</span>
+              <span class="ghost ghost--a" id="status-ga" aria-hidden="true"></span>
+              <span class="ghost ghost--b" id="status-gb" aria-hidden="true"></span>
+            </span>
+            <span class="prog__pct gtext" id="progress-text">
+              <span class="main" id="pct-main">00%</span>
+              <span class="ghost ghost--a" id="pct-ga" aria-hidden="true"></span>
+              <span class="ghost ghost--b" id="pct-gb" aria-hidden="true"></span>
+            </span>
+          </div>
+        </div>
+
+        <div class="noise-line" id="noise-line" aria-hidden="true"></div>
+        <button type="button" id="btn-skip" class="btn btn--skip">Skip · Esc</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from "three";
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const canvas = document.getElementById("webgl");
+    const stageEl = document.getElementById("stage");
+    const hudEl = document.getElementById("hud");
+    const bgNoiseEl = document.getElementById("bg-noise");
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: false,
+      powerPreference: "high-performance",
+    });
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    renderer.setClearColor(0xe8eef5, 1);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0xe8eef5, 12, 42);
+
+    const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+    camera.position.set(0, 3.8, 0.01);
+    camera.lookAt(0, 0.2, -20);
+
+    const CYAN = 0x00b4d8;
+    const BLUE = 0x3b82f6;
+    const MAG = 0xff2d95;
+    const DIM = 0x8aa0b8;
+
+    const world = new THREE.Group();
+    scene.add(world);
+
+    function buildPerspectiveGrid() {
+      const group = new THREE.Group();
+      const size = 60;
+      const divs = 40;
+      const half = size / 2;
+      const step = size / divs;
+      const pos = [];
+      for (let i = 0; i <= divs; i++) {
+        const p = -half + i * step;
+        pos.push(-half, 0, p, half, 0, p);
+        pos.push(p, 0, -half, p, 0, half);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      const mat = new THREE.LineBasicMaterial({
+        color: BLUE, transparent: true, opacity: 0.22, depthWrite: false,
+      });
+      group.add(new THREE.LineSegments(geo, mat));
+      const hGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-half, 0.01, -half),
+        new THREE.Vector3(half, 0.01, -half),
+      ]);
+      group.add(new THREE.Line(
+        hGeo,
+        new THREE.LineBasicMaterial({ color: CYAN, transparent: true, opacity: 0.35 })
+      ));
+      return group;
+    }
+
+    const floor = buildPerspectiveGrid();
+    floor.position.y = -0.2;
+    world.add(floor);
+
+    // keep ref for glitch color flash
+    const floorMat = floor.children[0].material;
+
+    function makeRail(x) {
+      const g = new THREE.Group();
+      const positions = [];
+      for (let z = 8; z > -28; z -= 2) {
+        positions.push(x, 0.05, z, x, 1.2 + Math.random() * 0.8, z);
+        positions.push(x, 1.2, z, x + (x > 0 ? 0.4 : -0.4), 1.2, z);
+      }
+      const pgeo = new THREE.BufferGeometry();
+      pgeo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      g.add(new THREE.LineSegments(
+        pgeo,
+        new THREE.LineBasicMaterial({ color: DIM, transparent: true, opacity: 0.18 })
+      ));
+      return g;
+    }
+    world.add(makeRail(-6));
+    world.add(makeRail(6));
+
+    function wireBox(w, h, d, color, opacity) {
+      const geo = new THREE.BoxGeometry(w, h, d);
+      const edges = new THREE.EdgesGeometry(geo);
+      geo.dispose();
+      return new THREE.LineSegments(
+        edges,
+        new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false })
+      );
+    }
+
+    const props = [];
+    const propData = [
+      { s: [1.2, 2.4, 1.2], p: [-4.5, 1.1, -8], c: BLUE, o: 0.28 },
+      { s: [1, 3, 1], p: [4.8, 1.4, -11], c: CYAN, o: 0.24 },
+      { s: [1.6, 1.6, 1.6], p: [-3.2, 2.2, -16], c: MAG, o: 0.18 },
+      { s: [2, 0.5, 2], p: [0, 0.3, -6], c: BLUE, o: 0.2 },
+      { s: [0.9, 2, 0.9], p: [3.5, 1, -20], c: CYAN, o: 0.16 },
+      { s: [0.9, 2.2, 0.9], p: [-5, 1.1, -22], c: BLUE, o: 0.14 },
+    ];
+    for (const d of propData) {
+      const m = wireBox(d.s[0], d.s[1], d.s[2], d.c, d.o);
+      m.position.set(...d.p);
+      m.rotation.y = Math.random() * 0.5;
+      world.add(m);
+      props.push({ mesh: m, spin: 0.1 + Math.random() * 0.15 });
+    }
+
+    const hud3 = new THREE.Group();
+    hud3.position.set(0, 1.6, -5);
+    world.add(hud3);
+
+    function ring(r, color, opacity, dash) {
+      const curve = new THREE.EllipseCurve(0, 0, r, r, 0, Math.PI * 2, false, 0);
+      const pts = curve.getPoints(96).map((p) => new THREE.Vector3(p.x, p.y, 0));
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat = dash && !reduceMotion
+        ? new THREE.LineDashedMaterial({ color, transparent: true, opacity, dashSize: 0.2, gapSize: 0.14 })
+        : new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+      const line = new THREE.LineLoop(geo, mat);
+      if (dash && line.computeLineDistances) line.computeLineDistances();
+      return line;
+    }
+
+    const r1 = ring(1.5, CYAN, 0.55, true);
+    const r2 = ring(2.0, BLUE, 0.35, true);
+    const r3 = ring(2.5, MAG, 0.22, false);
+    r1.rotation.x = Math.PI / 2.1;
+    r2.rotation.x = Math.PI / 2.3;
+    r3.rotation.x = Math.PI / 1.85;
+    hud3.add(r1, r2, r3);
+
+    {
+      const mk = (a, b, c) => {
+        const g = new THREE.BufferGeometry().setFromPoints([a, b]);
+        return new THREE.Line(g, new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.7 }));
+      };
+      hud3.add(mk(new THREE.Vector3(-0.4, 0, 0), new THREE.Vector3(-0.12, 0, 0), CYAN));
+      hud3.add(mk(new THREE.Vector3(0.12, 0, 0), new THREE.Vector3(0.4, 0, 0), CYAN));
+      hud3.add(mk(new THREE.Vector3(0, -0.4, 0), new THREE.Vector3(0, -0.12, 0), CYAN));
+      hud3.add(mk(new THREE.Vector3(0, 0.12, 0), new THREE.Vector3(0, 0.4, 0), CYAN));
+      hud3.add(wireBox(0.35, 0.35, 0.01, BLUE, 0.65));
+    }
+
+    const pN = reduceMotion ? 40 : 120;
+    const pArr = new Float32Array(pN * 3);
+    for (let i = 0; i < pN; i++) {
+      pArr[i * 3] = (Math.random() - 0.5) * 20;
+      pArr[i * 3 + 1] = Math.random() * 6 + 0.5;
+      pArr[i * 3 + 2] = -Math.random() * 30 + 2;
+    }
+    const pGeo = new THREE.BufferGeometry();
+    pGeo.setAttribute("position", new THREE.BufferAttribute(pArr, 3));
+    const points = new THREE.Points(
+      pGeo,
+      new THREE.PointsMaterial({
+        color: CYAN, size: 0.04, transparent: true, opacity: 0.35,
+        depthWrite: false, sizeAttenuation: true,
+      })
+    );
+    world.add(points);
+
+    let warp = 0;
+    let glitchAmt = 0; // 0..1 driven by UI
+    let running = true;
+    let rafId = 0;
+    const clock = new THREE.Clock();
+    let scrollZ = 0;
+
+    function resize() {
+      const w = innerWidth;
+      const h = innerHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, false);
+    }
+
+    function animate() {
+      if (!running) return;
+      rafId = requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+      const m = reduceMotion ? 0.2 : 1;
+
+      scrollZ += (0.035 + warp * 0.12) * m;
+      floor.position.z = (scrollZ % 1.5);
+
+      // camera + world jitter when glitching
+      const jx = glitchAmt * (Math.random() - 0.5) * 0.35;
+      const jy = glitchAmt * (Math.random() - 0.5) * 0.2;
+      const jz = glitchAmt * (Math.random() - 0.5) * 0.25;
+
+      camera.position.x = Math.sin(t * 0.25) * 0.35 * m + jx;
+      camera.position.y = 3.6 + Math.sin(t * 0.18) * 0.12 * m - warp * 0.4 + jy;
+      camera.position.z = 0.2 + jz;
+      camera.lookAt(Math.sin(t * 0.15) * 0.2 + jx * 0.5, 0.4 + warp * 0.5, -22);
+
+      world.position.x = glitchAmt * (Math.random() - 0.5) * 0.15;
+      world.rotation.z = glitchAmt * (Math.random() - 0.5) * 0.04;
+
+      // grid flicker
+      floorMat.opacity = 0.18 + warp * 0.06 + glitchAmt * (0.08 + Math.random() * 0.12);
+      if (glitchAmt > 0.5 && Math.random() > 0.7) {
+        floorMat.color.setHex(Math.random() > 0.5 ? CYAN : MAG);
+      } else {
+        floorMat.color.setHex(BLUE);
+      }
+
+      for (const p of props) {
+        p.mesh.position.z += (0.04 + warp * 0.1) * m;
+        p.mesh.rotation.y += p.spin * 0.008 * m;
+        if (p.mesh.position.z > 4) p.mesh.position.z = -26 - Math.random() * 4;
+        p.mesh.material.opacity = (p.mesh.userData.baseO || 0.2) ;
+      }
+
+      r1.rotation.z = t * 0.55 * m + glitchAmt * 0.8;
+      r2.rotation.z = -t * 0.35 * m;
+      r3.rotation.z = t * 0.2 * m;
+      hud3.position.z = -5 + warp * 1.5;
+      hud3.position.x = glitchAmt * (Math.random() - 0.5) * 0.4;
+      hud3.scale.setScalar(1 + warp * 0.15);
+
+      const a = points.geometry.attributes.position.array;
+      for (let i = 0; i < pN; i++) {
+        a[i * 3 + 2] += (0.06 + warp * 0.15) * m;
+        if (glitchAmt > 0.4 && Math.random() > 0.98) {
+          a[i * 3] += (Math.random() - 0.5) * 2;
+        }
+        if (a[i * 3 + 2] > 3) {
+          a[i * 3 + 2] = -28;
+          a[i * 3] = (Math.random() - 0.5) * 20;
+          a[i * 3 + 1] = Math.random() * 6 + 0.5;
+        }
+      }
+      points.geometry.attributes.position.needsUpdate = true;
+      points.material.opacity = 0.25 + warp * 0.2 + glitchAmt * 0.25;
+      points.material.color.setHex(glitchAmt > 0.6 && Math.random() > 0.5 ? MAG : CYAN);
+
+      scene.fog.near = 10 - warp * 3;
+      scene.fog.far = 40 - warp * 8;
+
+      renderer.render(scene, camera);
+    }
+
+    function start() {
+      if (running && rafId) return;
+      running = true;
+      clock.start();
+      animate();
+    }
+
+    function stop() {
+      running = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+
+    function setWarp(v) { warp = Math.max(0, Math.min(1, v)); }
+    function setGlitch3d(v) { glitchAmt = Math.max(0, Math.min(1, v)); }
+
+    addEventListener("resize", resize);
+    resize();
+    start();
+
+    // ── Glitch text helpers ──
+    const GLITCH = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789@#$%&*<>/\\|+=";
+    const HEX = "0123456789ABCDEF";
+    const BRAND_TRUE = "SakiBlog";
+
+    function rc(pool = GLITCH) {
+      return pool[(Math.random() * pool.length) | 0];
+    }
+
+    function scramble(len, pool = GLITCH) {
+      let s = "";
+      for (let i = 0; i < len; i++) s += rc(pool);
+      return s;
+    }
+
+    /** keep some true chars, scramble rest */
+    function corrupt(trueStr, amount) {
+      let out = "";
+      for (let i = 0; i < trueStr.length; i++) {
+        const ch = trueStr[i];
+        if (ch === " " || ch === "%") {
+          out += ch;
+          continue;
+        }
+        out += Math.random() < amount ? rc() : ch;
+      }
+      return out;
+    }
+
+    function pad2(n) {
+      return (n < 10 ? "0" : "") + n;
+    }
+
+    function formatPct(n) {
+      return pad2(Math.round(n)) + "%";
+    }
+
+    // bg noise grid
+    function buildBgNoise(scrambling) {
+      const cols = Math.ceil(innerWidth / 9);
+      const rows = Math.min(28, Math.ceil(innerHeight / 22));
+      const pool = scrambling ? GLITCH + HEX : HEX + " .·";
+      let s = "";
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (!scrambling && Math.random() > 0.08) s += " ";
+          else s += rc(pool);
+        }
+        s += "\n";
+      }
+      return s;
+    }
+
+    // ── DOM refs ──
+    const loader = document.getElementById("loader");
+    const app = document.getElementById("app");
+    const bar = document.getElementById("progress-bar");
+    const prog = document.getElementById("prog");
+
+    const brandEl = document.getElementById("brand");
+    const brandMain = document.getElementById("brand-main");
+    const brandGa = document.getElementById("brand-ga");
+    const brandGb = document.getElementById("brand-gb");
+
+    const subWrap = document.getElementById("sub-wrap");
+    const subMain = document.getElementById("loader-sub");
+    const subGa = document.getElementById("sub-ga");
+    const subGb = document.getElementById("sub-gb");
+
+    const statusWrap = document.getElementById("status-wrap");
+    const statusMain = document.getElementById("loader-status");
+    const statusGa = document.getElementById("status-ga");
+    const statusGb = document.getElementById("status-gb");
+
+    const pctWrap = document.getElementById("progress-text");
+    const pctMain = document.getElementById("pct-main");
+    const pctGa = document.getElementById("pct-ga");
+    const pctGb = document.getElementById("pct-gb");
+
+    const noiseLine = document.getElementById("noise-line");
+    const btnSkip = document.getElementById("btn-skip");
+    const btnReplay = document.getElementById("btn-replay");
+
+    const DURATION_MS = reduceMotion ? 250 : 3800;
+    const EXIT_MS = reduceMotion ? 150 : 700;
+    const FLASH_MS = reduceMotion ? 0 : 420;
+
+    const PHASES = [
+      { at: 0, sub: "INITIALIZING", status: "BOOT" },
+      { at: 0.2, sub: "MAP_GRID", status: "NAV" },
+      { at: 0.45, sub: "LINK_NODES", status: "MESH" },
+      { at: 0.7, sub: "SYNC_UI", status: "DRAW" },
+      { at: 0.9, sub: "OPEN_CH", status: "GO" },
+    ];
+
+    let raf = 0;
+    let glitchRaf = 0;
+    let startTs = 0;
+    let phase = "idle";
+    let skipRequested = false;
+    let displayPct = 0;
+    let scrambleUntil = 0;
+    let trueSub = PHASES[0].sub;
+    let trueStatus = PHASES[0].status;
+    let bgNoiseTick = 0;
+
+    const glitchTargets = [brandEl, subWrap, statusWrap, pctWrap];
+
+    function setScrambleClass(on) {
+      for (const el of glitchTargets) el.classList.toggle("is-scrambling", on);
+      noiseLine.classList.toggle("is-scrambling", on);
+      prog.classList.toggle("is-scrambling", on);
+      stageEl.classList.toggle("is-glitch", on);
+      stageEl.classList.toggle("hard", on && Math.random() > 0.45);
+      hudEl.classList.toggle("is-glitch", on);
+    }
+
+    function applyLayer(mainEl, ga, gb, trueVal, amount) {
+      if (amount <= 0.05) {
+        mainEl.textContent = trueVal;
+        ga.textContent = "";
+        gb.textContent = "";
+        return;
+      }
+      if (Math.random() > 0.3) {
+        mainEl.textContent = corrupt(trueVal, amount);
+      } else {
+        mainEl.textContent = trueVal;
+      }
+      ga.textContent = scramble(trueVal.length);
+      gb.textContent = corrupt(trueVal, Math.min(1, amount + 0.2));
+    }
+
+    function tickGlitch(now) {
+      glitchRaf = requestAnimationFrame(tickGlitch);
+
+      const scrambling = !reduceMotion && now < scrambleUntil;
+      const amount = scrambling
+        ? Math.min(1, (scrambleUntil - now) / 160 + 0.35 + Math.random() * 0.4)
+        : 0;
+
+      setScrambleClass(scrambling);
+      setGlitch3d(scrambling ? 0.35 + amount * 0.65 : Math.max(0, glitchAmt * 0.85));
+
+      const pctTrue = formatPct(displayPct);
+
+      if (scrambling) {
+        applyLayer(brandMain, brandGa, brandGb, BRAND_TRUE, amount);
+        applyLayer(subMain, subGa, subGb, trueSub, amount);
+        applyLayer(statusMain, statusGa, statusGb, trueStatus, amount);
+        applyLayer(pctMain, pctGa, pctGb, pctTrue, amount);
+
+        // CSS vars for slice / offset
+        const gx = ((Math.random() - 0.5) * 10).toFixed(1) + "px";
+        const gsk = ((Math.random() - 0.5) * 1.2).toFixed(2) + "deg";
+        const cs1 = (Math.random() * 20).toFixed(1) + "%";
+        const cs2 = (20 + Math.random() * 25).toFixed(1) + "%";
+        const cs3 = (45 + Math.random() * 20).toFixed(1) + "%";
+        const cs4 = "100%";
+        stageEl.style.setProperty("--gx", gx);
+        stageEl.style.setProperty("--gsk", gsk);
+        stageEl.style.setProperty("--cs1", cs1);
+        stageEl.style.setProperty("--cs2", cs2);
+        stageEl.style.setProperty("--cs3", cs3);
+        stageEl.style.setProperty("--cs4", cs4);
+        stageEl.style.setProperty("--nx", ((Math.random() - 0.5) * 8).toFixed(1) + "px");
+        hudEl.style.setProperty("--hx", ((Math.random() - 0.5) * 4).toFixed(1) + "px");
+        hudEl.style.setProperty("--hy", ((Math.random() - 0.5) * 3).toFixed(1) + "px");
+        prog.style.setProperty("--bx", ((Math.random() - 0.5) * 6).toFixed(1) + "px");
+
+        let line = "";
+        for (let i = 0; i < 20; i++) line += rc(HEX) + (i % 2 ? " " : "");
+        noiseLine.textContent = line;
+
+        // refresh bg glyph field often while glitching
+        if (now - bgNoiseTick > 40) {
+          bgNoiseEl.textContent = buildBgNoise(true);
+          bgNoiseTick = now;
+        }
+      } else {
+        brandMain.textContent = BRAND_TRUE;
+        brandGa.textContent = brandGb.textContent = "";
+        subMain.textContent = trueSub;
+        subGa.textContent = subGb.textContent = "";
+        statusMain.textContent = trueStatus;
+        statusGa.textContent = statusGb.textContent = "";
+        pctMain.textContent = pctTrue;
+        pctGa.textContent = pctGb.textContent = "";
+        setGlitch3d(0);
+
+        if (Math.random() > 0.93) {
+          noiseLine.textContent = scramble(14, HEX + "  ");
+        }
+        if (now - bgNoiseTick > 400) {
+          bgNoiseEl.textContent = buildBgNoise(false);
+          bgNoiseTick = now;
+        }
+      }
+    }
+
+    function setProgress(p) {
+      const progress = Math.max(0, Math.min(1, p));
+      const prev = displayPct;
+      displayPct = progress * 100;
+      bar.style.width = displayPct + "%";
+      setWarp(progress * progress);
+
+      if (!reduceMotion && Math.abs(displayPct - prev) > 0.7) {
+        scrambleUntil = performance.now() + 100 + Math.random() * 140;
+      }
+
+      let msg = PHASES[0];
+      for (let i = 0; i < PHASES.length; i++) {
+        if (progress >= PHASES[i].at) msg = PHASES[i];
+      }
+      if (phase === "loading") {
+        trueSub = msg.sub;
+        trueStatus = msg.status;
+      }
+    }
+
+    function setAppAccessible(ready) {
+      app.setAttribute("aria-hidden", ready ? "false" : "true");
+      loader.setAttribute("aria-busy", ready ? "false" : "true");
+      document.body.classList.toggle("is-loading", !ready);
+    }
+
+    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+    function shaped(t) {
+      if (t < 0.35) return easeOutCubic(t / 0.35) * 0.38;
+      if (t < 0.48) return 0.38 + ((t - 0.35) / 0.13) * 0.07;
+      if (t < 0.75) return 0.45 + easeOutCubic((t - 0.48) / 0.27) * 0.4;
+      return 0.85 + easeOutCubic((t - 0.75) / 0.25) * 0.15;
+    }
+
+    function tick(now) {
+      if (phase !== "loading") return;
+      if (skipRequested) { finishLoading(true); return; }
+      const t = Math.min(1, (now - startTs) / DURATION_MS);
+      setProgress(reduceMotion ? t : shaped(t));
+      // random full-screen glitch bursts
+      if (!reduceMotion && Math.random() > 0.965) {
+        scrambleUntil = now + 80 + Math.random() * 160;
+      }
+      if (t >= 1) { finishLoading(false); return; }
+      raf = requestAnimationFrame(tick);
+    }
+
+    function finishLoading(fromSkip) {
+      phase = "complete";
+      setProgress(1);
+      trueSub = fromSkip ? "SKIPPED" : "ONLINE";
+      trueStatus = fromSkip ? "BYP" : "OK";
+      scrambleUntil = performance.now() + (fromSkip ? 120 : 280);
+      btnSkip.hidden = true;
+
+      const after = () => {
+        phase = "exiting";
+        loader.classList.add("is-exiting");
+        loader.classList.remove("is-complete");
+        setTimeout(enterReady, EXIT_MS);
+      };
+
+      if (fromSkip || FLASH_MS === 0) after();
+      else {
+        loader.classList.add("is-complete");
+        setTimeout(after, FLASH_MS);
+      }
+    }
+
+    function enterReady() {
+      phase = "ready";
+      loader.classList.add("is-hidden");
+      loader.classList.remove("is-exiting");
+      btnReplay.hidden = false;
+      setAppAccessible(true);
+      setWarp(0);
+      setGlitch3d(0);
+      stop();
+      cancelAnimationFrame(glitchRaf);
+      setScrambleClass(false);
+    }
+
+    function startLoading() {
+      if (raf) cancelAnimationFrame(raf);
+      cancelAnimationFrame(glitchRaf);
+      skipRequested = false;
+      phase = "loading";
+      displayPct = 0;
+      trueSub = PHASES[0].sub;
+      trueStatus = PHASES[0].status;
+      setProgress(0);
+      pctMain.textContent = "00%";
+      brandMain.textContent = BRAND_TRUE;
+      subMain.textContent = trueSub;
+      statusMain.textContent = trueStatus;
+      noiseLine.textContent = "";
+      bgNoiseEl.textContent = buildBgNoise(false);
+      btnSkip.hidden = false;
+      btnReplay.hidden = true;
+      loader.classList.remove("is-hidden", "is-exiting", "is-complete");
+      void loader.offsetWidth;
+      setAppAccessible(false);
+      setWarp(0);
+      setGlitch3d(0);
+      start();
+      startTs = performance.now();
+      scrambleUntil = startTs + 220;
+      bgNoiseTick = 0;
+      glitchRaf = requestAnimationFrame(tickGlitch);
+      raf = requestAnimationFrame(tick);
+    }
+
+    function requestSkip() {
+      if (phase !== "loading") return;
+      skipRequested = true;
+    }
+
+    btnSkip.addEventListener("click", requestSkip);
+    btnReplay.addEventListener("click", startLoading);
+    addEventListener("keydown", (e) => {
+      if (e.key === "Escape") requestSkip();
+    });
+
+    startLoading();
+  </script>
+</body>
+</html>

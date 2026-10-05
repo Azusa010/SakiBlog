@@ -1,5 +1,7 @@
 # Blog Loading Demo Implementation Plan
 
+> **状态(2026-10-05):实现已完成**,成品见 `demo/loading/index.html`(canvas 星野、双环、进度状态机、Skip/Esc/Replay、prefers-reduced-motion 均已在代码中),并已提交入库。下方复选框保留原始状态作为过程记录;其中"浏览器人工验收"类步骤未重新执行,待该动画接入正式页面时一并验证。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a standalone sci-fi starfield full-screen first-load loading demo at `demo/loading/index.html` that auto-plays, supports Skip/Esc/Replay, and reveals a minimal fake blog home.
