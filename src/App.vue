@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { currentTheme, saveTheme, type Theme } from '@/theme'
 
 // FR-SEARCH-001/003:主要页面提供搜索入口,空关键词不触发导航
 const router = useRouter()
@@ -11,6 +12,15 @@ function submitSearch() {
   if (!q) return
   router.push({ path: '/search', query: { q } })
   searchQuery.value = ''
+}
+
+// FR-THEME-003/004:手动切换主题并记忆偏好
+const theme = ref<Theme>(currentTheme())
+
+function toggleTheme() {
+  const next: Theme = theme.value === 'dark' ? 'light' : 'dark'
+  saveTheme(next)
+  theme.value = next
 }
 </script>
 
@@ -25,16 +35,26 @@ function submitSearch() {
         <RouterLink to="/tags">标签</RouterLink>
         <RouterLink to="/about">关于</RouterLink>
       </nav>
-      <form class="search-form" role="search" @submit.prevent="submitSearch">
-        <input
-          v-model="searchQuery"
-          type="search"
-          name="q"
-          placeholder="搜索文章"
-          aria-label="搜索文章"
-        />
-        <button type="submit">搜索</button>
-      </form>
+      <div class="header-actions">
+        <form class="search-form" role="search" @submit.prevent="submitSearch">
+          <input
+            v-model="searchQuery"
+            type="search"
+            name="q"
+            placeholder="搜索文章"
+            aria-label="搜索文章"
+          />
+          <button type="submit">搜索</button>
+        </form>
+        <button
+          type="button"
+          class="theme-toggle"
+          :aria-label="theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
+          @click="toggleTheme"
+        >
+          {{ theme === 'dark' ? '☀️' : '🌙' }}
+        </button>
+      </div>
     </header>
 
     <main class="site-main">
@@ -88,6 +108,26 @@ function submitSearch() {
 .site-nav a.router-link-active {
   color: var(--color-text);
   font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.theme-toggle {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.theme-toggle:hover {
+  border-color: var(--color-accent);
 }
 
 .search-form {

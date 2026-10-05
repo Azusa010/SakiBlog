@@ -5,6 +5,11 @@ import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import router from './router'
+import { applyTheme, resolveInitialTheme, watchSystemTheme } from './theme'
+
+// 挂载前先应用主题,避免首屏闪烁(FR-THEME-002/004)
+applyTheme(resolveInitialTheme())
+watchSystemTheme()
 
 const app = createApp(App)
 
