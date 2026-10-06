@@ -3,11 +3,12 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { fetchPosts, type PostSummary } from '@/api/posts'
 import PostCard from '@/components/PostCard.vue'
+import heroDusk from '@/assets/hero-dusk.jpg'
 
 /**
  * 首页(FR-HOME-001 ~ 004):整屏电影感 hero + 最新文章列表。
- * 场景(星空、光环、山影、纸飞机、水面)为内联 SVG 程序化绘制;
- * 精细指针下四层视差,纸飞机有拖尾与漂浮。
+ * 场景底图为真实摄影(Unsplash photo-1483728642387,Unsplash License),
+ * 光环 / 纸飞机 / 水面为 SVG 与渐变叠加;精细指针下三层视差。
  */
 const posts = ref<PostSummary[]>([])
 const state = ref<'loading' | 'ready' | 'error'>('loading')
@@ -33,8 +34,8 @@ function prefersReducedMotion(): boolean {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-// 鼠标视差(--mx/--my 写在 hero 上,各层按深度取不同系数)与磁吸 CTA;
-// 值直接写 CSS 变量,不进框架状态
+// 鼠标视差(--mx/--my 写在 hero 上,照片/光环/纸飞机按深度取不同系数)
+// 与磁吸 CTA;值直接写 CSS 变量,不进框架状态
 let cleanupFns: (() => void)[] = []
 
 onMounted(() => {
@@ -80,93 +81,52 @@ onBeforeUnmount(() => {
 <template>
   <div class="home">
     <section ref="heroEl" class="hero">
-      <svg class="scene" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <!-- 真实摄影底图:山影与星空 -->
+      <img class="hero-photo" :src="heroDusk" alt="" aria-hidden="true" fetchpriority="high" />
+      <!-- 色彩分级与可读性叠层 -->
+      <div class="hero-tint" aria-hidden="true"></div>
+
+      <!-- 光环:渐变底部透明,主峰自然"穿出"环的下缘 -->
+      <svg class="hero-ring" viewBox="0 0 600 600" aria-hidden="true">
         <defs>
-          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#0a1120" />
-            <stop offset="0.55" stop-color="#14233a" />
-            <stop offset="1" stop-color="#31435e" />
-          </linearGradient>
-          <radialGradient id="dawn" cx="0.66" cy="1" r="0.9">
-            <stop offset="0" stop-color="#e8b877" stop-opacity="0.5" />
-            <stop offset="0.45" stop-color="#a97f52" stop-opacity="0.2" />
-            <stop offset="1" stop-color="#a97f52" stop-opacity="0" />
-          </radialGradient>
-          <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#1b2c44" />
-            <stop offset="0.35" stop-color="#101c2e" />
-            <stop offset="1" stop-color="#070d18" />
-          </linearGradient>
-          <linearGradient id="ring" x1="0" y1="1" x2="1" y2="0">
-            <stop offset="0.35" stop-color="#f0c088" stop-opacity="0" />
-            <stop offset="0.62" stop-color="#f0c088" stop-opacity="0.55" />
-            <stop offset="0.82" stop-color="#ffe9c4" stop-opacity="0.95" />
+          <linearGradient id="ring-grad" x1="0.3" y1="1" x2="0.78" y2="0">
+            <stop offset="0" stop-color="#f0c088" stop-opacity="0" />
+            <stop offset="0.45" stop-color="#f0c088" stop-opacity="0" />
+            <stop offset="0.68" stop-color="#f0c088" stop-opacity="0.5" />
+            <stop offset="0.86" stop-color="#ffe9c4" stop-opacity="0.95" />
             <stop offset="1" stop-color="#fff3dd" />
           </linearGradient>
-          <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+          <filter id="ring-soft" x="-40%" y="-40%" width="180%" height="180%">
             <feGaussianBlur stdDeviation="7" />
           </filter>
         </defs>
-
-        <rect width="1440" height="580" fill="url(#sky)" />
-        <rect width="1440" height="580" fill="url(#dawn)" />
-
-        <g class="layer layer-stars">
-          <g class="stars stars-a">
-            <circle cx="120" cy="90" r="1.1" fill="#d8e4ff" />
-            <circle cx="340" cy="150" r="0.9" fill="#d8e4ff" />
-            <circle cx="520" cy="60" r="1.3" fill="#d8e4ff" />
-            <circle cx="700" cy="120" r="0.8" fill="#d8e4ff" />
-            <circle cx="1080" cy="80" r="1.2" fill="#d8e4ff" />
-            <circle cx="1260" cy="180" r="0.9" fill="#d8e4ff" />
-            <circle cx="1360" cy="60" r="1" fill="#d8e4ff" />
-            <circle cx="220" cy="250" r="0.8" fill="#d8e4ff" />
-          </g>
-          <g class="stars stars-b">
-            <circle cx="60" cy="180" r="1.4" fill="#cfe0ff" />
-            <circle cx="430" cy="230" r="1" fill="#cfe0ff" />
-            <circle cx="620" cy="40" r="1.1" fill="#cfe0ff" />
-            <circle cx="930" cy="60" r="0.9" fill="#cfe0ff" />
-            <circle cx="1180" cy="120" r="1.3" fill="#cfe0ff" />
-            <circle cx="1320" cy="260" r="0.8" fill="#cfe0ff" />
-            <circle cx="300" cy="40" r="1" fill="#cfe0ff" />
-            <circle cx="820" cy="150" r="0.9" fill="#cfe0ff" />
-          </g>
-        </g>
-
-        <g class="layer layer-ring">
-          <g class="ring">
-            <circle cx="780" cy="360" r="215" fill="none" stroke="url(#ring)" stroke-width="10" filter="url(#soft)" opacity="0.45" />
-            <circle cx="780" cy="360" r="215" fill="none" stroke="url(#ring)" stroke-width="2.5" />
-          </g>
-        </g>
-
-        <g class="layer layer-plane">
-          <path
-            class="trail"
-            d="M690 330 C 790 305 880 262 946 226"
-            fill="none"
-            stroke="#e8e6e1"
-            stroke-opacity="0.25"
-            stroke-width="1"
-            stroke-dasharray="3 9"
-          />
-          <path class="plane" d="M952 226 L996 208 L970 248 L958 234 Z" fill="#f2ece2" />
-        </g>
-
-        <g class="layer layer-mountain">
-          <path d="M180 580 L400 468 L520 505 L640 400 L720 345 L800 430 L860 400 L950 480 L1020 458 L1140 580 Z" fill="#0a0f1a" />
-          <path d="M720 345 L800 430 L860 400 L950 480" fill="none" stroke="#e8b877" stroke-opacity="0.3" stroke-width="1.5" />
-        </g>
-
-        <rect y="580" width="1440" height="320" fill="url(#water)" />
-        <ellipse cx="800" cy="645" rx="430" ry="62" fill="#e8b877" opacity="0.13" filter="url(#soft)" />
-        <g class="shimmer" opacity="0.12">
-          <rect x="300" y="648" width="860" height="1" fill="#e8b877" />
-          <rect x="380" y="706" width="640" height="1" fill="#e8b877" />
-          <rect x="320" y="768" width="760" height="1" fill="#e8b877" />
+        <g class="ring">
+          <circle cx="300" cy="300" r="282" fill="none" stroke="url(#ring-grad)" stroke-width="10" filter="url(#ring-soft)" opacity="0.5" />
+          <circle cx="300" cy="300" r="282" fill="none" stroke="url(#ring-grad)" stroke-width="2.5" />
         </g>
       </svg>
+
+      <!-- 纸飞机与拖尾 -->
+      <svg class="hero-craft" viewBox="0 0 220 120" aria-hidden="true">
+        <path
+          class="trail"
+          d="M8 96 C 70 78 130 48 178 26"
+          fill="none"
+          stroke="#e8e6e1"
+          stroke-opacity="0.3"
+          stroke-width="1"
+          stroke-dasharray="3 9"
+        />
+        <path class="plane" d="M182 24 L214 12 L196 40 L188 30 Z" fill="#f2ece2" />
+      </svg>
+
+      <!-- 水面:沉入夜色 + 倒影光斑 + 微光 -->
+      <div class="hero-water" aria-hidden="true">
+        <div class="glow-reflection"></div>
+        <span class="shimmer-line" style="left: 18%; width: 30%; top: 22%"></span>
+        <span class="shimmer-line" style="left: 42%; width: 36%; top: 48%"></span>
+        <span class="shimmer-line" style="left: 24%; width: 26%; top: 72%"></span>
+      </div>
 
       <div class="hero-copy">
         <h1 class="hero-title" aria-label="在文字中,遇见更大的世界。"><span class="line" aria-hidden="true"><span class="line-inner" style="--line: 0">在文字中,</span></span><span class="line" aria-hidden="true"><span class="line-inner" style="--line: 1">遇见更大的世界。</span></span></h1>
@@ -204,11 +164,69 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.scene {
+/* 视差系数:照片最深、光环居中、纸飞机最浅 */
+.hero-photo {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  object-fit: cover;
+  object-position: 50% 58%;
+  transform: scale(1.08) translate(calc(var(--mx, 0) * -8px), calc(var(--my, 0) * -8px));
+  transition: transform 0.45s var(--ease-out);
+}
+
+.hero-tint {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgb(10 17 32 / 55%), transparent 52%),
+    radial-gradient(60% 40% at 66% 74%, rgb(232 184 119 / 18%), transparent 70%),
+    linear-gradient(180deg, rgb(10 17 32 / 55%) 0%, transparent 30%),
+    linear-gradient(180deg, transparent 56%, rgb(13 22 38 / 88%) 78%, #070d18 97%);
+}
+
+.hero-ring {
+  position: absolute;
+  left: 52%;
+  top: 42%;
+  width: clamp(320px, 54vmin, 640px);
+  transform: translate(-50%, -50%) translate(calc(var(--mx, 0) * -14px), calc(var(--my, 0) * -14px));
+  transition: transform 0.45s var(--ease-out);
+}
+
+.hero-craft {
+  position: absolute;
+  left: 58%;
+  top: 20%;
+  width: clamp(150px, 20vmin, 240px);
+  transform: translate(calc(var(--mx, 0) * -24px), calc(var(--my, 0) * -24px));
+  transition: transform 0.45s var(--ease-out);
+}
+
+.hero-water {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 30%;
+}
+
+.glow-reflection {
+  position: absolute;
+  left: 52%;
+  top: 18%;
+  width: 38vmin;
+  height: 9vmin;
+  transform: translateX(-50%);
+  background: radial-gradient(50% 50% at 50% 50%, rgb(232 184 119 / 20%), transparent 72%);
+  filter: blur(10px);
+}
+
+.shimmer-line {
+  position: absolute;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(232 184 119 / 45%), transparent);
 }
 
 .hero-copy {
@@ -304,38 +322,10 @@ onBeforeUnmount(() => {
   text-underline-offset: 3px;
 }
 
-/* 场景动效:视差层 / 光环呼吸 / 星点闪烁 / 拖尾行进 / 纸飞机漂浮 / 水面微光 */
+/* 场景动效:光环呼吸 / 拖尾行进 / 纸飞机漂浮 / 微光闪烁 */
 @media (prefers-reduced-motion: no-preference) {
-  .scene .layer {
-    transition: transform 0.45s var(--ease-out);
-  }
-
-  .layer-stars {
-    transform: translate(calc(var(--mx, 0) * -5px), calc(var(--my, 0) * -5px));
-  }
-
-  .layer-ring {
-    transform: translate(calc(var(--mx, 0) * -12px), calc(var(--my, 0) * -12px));
-  }
-
-  .layer-mountain {
-    transform: translate(calc(var(--mx, 0) * 6px), calc(var(--my, 0) * 6px));
-  }
-
-  .layer-plane {
-    transform: translate(calc(var(--mx, 0) * -20px), calc(var(--my, 0) * -20px));
-  }
-
   .ring {
     animation: ring-breathe 6s ease-in-out infinite alternate;
-  }
-
-  .stars-a {
-    animation: twinkle 4s ease-in-out infinite alternate;
-  }
-
-  .stars-b {
-    animation: twinkle 6.5s ease-in-out 1.2s infinite alternate;
   }
 
   .trail {
@@ -346,28 +336,26 @@ onBeforeUnmount(() => {
     animation: plane-float 7s ease-in-out infinite alternate;
   }
 
-  .shimmer {
+  .shimmer-line {
     animation: shimmer 5s ease-in-out infinite alternate;
+  }
+
+  .shimmer-line:nth-of-type(2) {
+    animation-delay: 1.6s;
+  }
+
+  .shimmer-line:nth-of-type(3) {
+    animation-delay: 3.1s;
   }
 }
 
 @keyframes ring-breathe {
   from {
-    opacity: 0.75;
+    opacity: 0.78;
   }
 
   to {
     opacity: 1;
-  }
-}
-
-@keyframes twinkle {
-  from {
-    opacity: 0.2;
-  }
-
-  to {
-    opacity: 0.85;
   }
 }
 
@@ -383,17 +371,17 @@ onBeforeUnmount(() => {
   }
 
   to {
-    transform: translate(10px, -12px) rotate(3deg);
+    transform: translate(8px, -10px) rotate(3deg);
   }
 }
 
 @keyframes shimmer {
   from {
-    opacity: 0.06;
+    opacity: 0.25;
   }
 
   to {
-    opacity: 0.16;
+    opacity: 0.9;
   }
 }
 
