@@ -1,8 +1,9 @@
 import type * as ThreeNS from 'three'
 
 /**
- * 粒子山脉场景:所有动效在 GPU 上完成(顶点着色器),
- * CPU 每帧只更新 uniform(时间/滚动/鼠标),6 万粒子不掉帧。
+ * 环境星尘与山脊微光场景(Three.js 增强层):
+ * 替代此前过密过曝的实体粒子山, 改为 2000+ 颗稀疏优雅的夜空浮尘与山脊星芒。
+ * 使用普通混合(NormalBlending)与低透明度, 杜绝高光过曝, 保留底层雪山照片的通透与层次。
  */
 
 type THREE = typeof ThreeNS
@@ -23,44 +24,56 @@ const VERTEX = /* glsl */ `
   attribute float aHeight;
 
   varying float vFade;
+  varying float vTwinkle;
 
   void main() {
     vec3 pos = position;
 
-    // 山体轮廓:y 越低越接近"雾线",越容易被风带走
-    float fragility = 1.0 - clamp(aHeight, 0.0, 1.0);
-    float takeoff = clamp(uDissolve * 1.6 - fragility * 0.6, 0.0, 1.0);
+    // 微风轻拂: 沿水平方向缓慢漂移, 循环包裹保持在视口区间
+    float drift = uTime * (0.6 + aSeed * 0.8);
+    pos.x = mod(pos.x + drift + 60.0, 120.0) - 60.0;
+    pos.y += sin(uTime * 0.35 + aSeed * 25.0) * 0.7;
+    pos.z += cos(uTime * 0.3 + aSeed * 18.0) * 0.5;
 
-    // 风:随时间增强的水平漂移 + 缓慢的正弦起伏
-    float drift = takeoff * (14.0 + aSeed * 10.0);
-    pos.x += drift * (0.6 + 0.4 * sin(uTime * 0.25 + aSeed * 40.0));
-    pos.y += drift * 0.55 * sin(uTime * 0.35 + aSeed * 17.0) - takeoff * takeoff * 22.0;
-    pos.z += drift * 0.3 * cos(uTime * 0.3 + aSeed * 23.0);
+    // 滚动散场: 随着页面向下滚, 星尘向右上空轻轻散开并淡出
+    float takeoff = clamp(uDissolve * 1.5, 0.0, 1.0);
+    pos.x += takeoff * (14.0 + aSeed * 12.0);
+    pos.y += takeoff * takeoff * 18.0;
 
-    // 鼠标推斥:视口平面上的涟漪,距离越近推得越开
+    // 鼠标推斥: 视口平面上的轻柔涟漪
     vec4 world = modelMatrix * vec4(pos, 1.0);
     float d = distance(world.xy, uMouse);
-    float push = smoothstep(26.0, 0.0, d) * (1.0 - takeoff);
-    pos.x += push * 6.0 * (0.5 + aSeed);
-    pos.y += push * 4.0 * aSeed;
+    float push = smoothstep(24.0, 0.0, d) * (1.0 - takeoff);
+    pos.x += push * 5.0 * (0.5 + aSeed);
+    pos.y += push * 3.5 * aSeed;
 
-    vFade = 1.0 - takeoff * 0.85;
-    gl_Position = projectionMatrix * viewMatrix * vec4(pos, 1.0);
-    gl_PointSize = (1.4 + aSeed * 1.8) * (300.0 / -(viewMatrix * vec4(pos, 1.0)).z);
+    vFade = 1.0 - takeoff * 0.9;
+    vTwinkle = sin(uTime * 1.6 + aSeed * 50.0);
+
+    vec4 mvPos = viewMatrix * vec4(pos, 1.0);
+    gl_Position = projectionMatrix * mvPos;
+
+    // 精致微小的星尘光点, 保证粒度细微且不遮挡背景
+    gl_PointSize = (0.9 + aSeed * 1.4) * (140.0 / -mvPos.z);
   }
 `
 
 const FRAGMENT = /* glsl */ `
   varying float vFade;
+  varying float vTwinkle;
 
   void main() {
-    // 圆形粒子 + 中心亮缘,暖金色调
     vec2 uv = gl_PointCoord - 0.5;
     float d = length(uv);
-    float alpha = smoothstep(0.5, 0.12, d) * vFade;
-    if (alpha < 0.02) discard;
-    vec3 warm = mix(vec3(0.55, 0.42, 0.26), vec3(1.0, 0.92, 0.78), smoothstep(0.5, 0.0, d));
-    gl_FragColor = vec4(warm, alpha * 0.85);
+    if (d > 0.5) discard;
+
+    // 柔和羽化边缘 + 细微呼吸闪烁, 控制在低不透明度
+    float alpha = smoothstep(0.5, 0.06, d) * vFade * (0.32 + 0.22 * vTwinkle);
+    if (alpha < 0.01) discard;
+
+    // 柔和优雅的暖金星芒, 不刺眼不过曝
+    vec3 warm = mix(vec3(0.86, 0.70, 0.48), vec3(1.0, 0.94, 0.82), smoothstep(0.5, 0.0, d));
+    gl_FragColor = vec4(warm, alpha);
   }
 `
 
@@ -74,14 +87,13 @@ export function createMountain(THREE: THREE, mount: HTMLElement): () => void {
   renderer.setClearColor(0x000000, 0)
   mount.appendChild(renderer.domElement)
 
-  // ---------- 粒子几何:山脊函数采样 ----------
-  const COUNT = 60000
+  // ---------- 粒子几何: 稀疏分布的环境星尘与山脊星芒 ----------
+  const COUNT = 2200
   const positions = new Float32Array(COUNT * 3)
   const seeds = new Float32Array(COUNT)
   const heights = new Float32Array(COUNT)
 
   const ridge = (x: number, z: number): number => {
-    // 三层山脊叠加:远山缓、近山陡,主峰居中偏右(与照片呼应)
     const main = 16 * Math.exp(-((x - 4) ** 2) / 260) * (1 - Math.abs(z) / 60)
     const west = 9 * Math.exp(-((x + 16) ** 2) / 90) * (1 - Math.abs(z) / 70)
     const foothill = 3.5 * Math.exp(-((x + 6) ** 2) / 500)
@@ -89,16 +101,30 @@ export function createMountain(THREE: THREE, mount: HTMLElement): () => void {
   }
 
   for (let i = 0; i < COUNT; i += 1) {
-    // 体分布:x/z 平面上取点,y 按山脊高度的概率密度下沉
-    const x = (Math.random() - 0.5) * 90
-    const z = (Math.random() - 0.5) * 70
-    const peak = ridge(x, z)
-    const y = peak * Math.pow(Math.random(), 0.65)
-    positions[i * 3] = x
-    positions[i * 3 + 1] = y
-    positions[i * 3 + 2] = z - 8
-    seeds[i] = Math.random()
-    heights[i] = peak > 0.01 ? y / (peak + 0.001) : 0
+    const seed = Math.random()
+    seeds[i] = seed
+
+    if (seed < 0.65) {
+      // 沿着山脊轮廓与上方空域轻柔浮游, 绝不填满山体实心
+      const x = (Math.random() - 0.5) * 85
+      const z = (Math.random() - 0.5) * 40
+      const peak = ridge(x, z)
+      // 漂浮在山脊上方高度区间
+      const y = peak + (Math.random() - 0.15) * 10
+      positions[i * 3] = x
+      positions[i * 3 + 1] = Math.max(y, 1.0)
+      positions[i * 3 + 2] = z - 6
+      heights[i] = peak > 0.01 ? y / (peak + 0.001) : 0.5
+    } else {
+      // 广阔夜空背景里的微光尘埃
+      const x = (Math.random() - 0.5) * 110
+      const y = Math.random() * 26 + 2
+      const z = (Math.random() - 0.5) * 50
+      positions[i * 3] = x
+      positions[i * 3 + 1] = y
+      positions[i * 3 + 2] = z - 10
+      heights[i] = 1.0
+    }
   }
 
   const geometry = new THREE.BufferGeometry()
@@ -113,13 +139,14 @@ export function createMountain(THREE: THREE, mount: HTMLElement): () => void {
     uDissolve: { value: 0 },
   }
 
+  // 关键: 使用 NormalBlending 避免数万粒子叠加引发的致盲性白光过曝
   const material = new THREE.ShaderMaterial({
     uniforms: uniforms as unknown as ThreeNS.ShaderMaterial['uniforms'],
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT,
     transparent: true,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
+    blending: THREE.NormalBlending,
   })
 
   const points = new THREE.Points(geometry, material)
@@ -139,7 +166,6 @@ export function createMountain(THREE: THREE, mount: HTMLElement): () => void {
   resizeObserver.observe(mount)
 
   // ---------- 交互 ----------
-  // 鼠标 → 相机投影平面的世界坐标(近似:把视口点反投影到 z=0 平面)
   const mouseNDC = new THREE.Vector2(999, 999)
   const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0)
   const ray = new THREE.Raycaster()
@@ -164,7 +190,7 @@ export function createMountain(THREE: THREE, mount: HTMLElement): () => void {
   mount.addEventListener('pointermove', onPointerMove, { passive: true })
   mount.addEventListener('pointerleave', onPointerLeave)
 
-  // 滚动散场:hero 滚出视口的过程中 0 → 1(与滚动退场叙事一致)
+  // 滚动散场: hero 滚出视口的过程中 0 → 1
   function dissolveFromScroll() {
     const rect = mount.getBoundingClientRect()
     const gone = Math.min(Math.max(-rect.top / window.innerHeight, 0), 1)
@@ -173,7 +199,7 @@ export function createMountain(THREE: THREE, mount: HTMLElement): () => void {
   }
   window.addEventListener('scroll', dissolveFromScroll, { passive: true })
 
-  // ---------- 帧循环(仅 hero 在视口内时渲染) ----------
+  // ---------- 帧循环 ----------
   let rafId = 0
   let running = true
   const clock = new THREE.Clock()
