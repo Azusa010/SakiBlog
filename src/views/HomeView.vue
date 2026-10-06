@@ -38,9 +38,55 @@ function prefersReducedMotion(): boolean {
 // 与磁吸 CTA;值直接写 CSS 变量,不进框架状态
 let cleanupFns: (() => void)[] = []
 
+// 浏览器不支持 CSS scroll-timeline 时的滚动退场回退:
+// rAF 节流 + 被动监听 + 只写 transform/opacity,仅在该分支才挂 scroll 监听
+function supportsScrollTimeline(): boolean {
+  return typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('animation-timeline: scroll()')
+}
+
 onMounted(() => {
   const hero = heroEl.value
-  if (!hero || !finePointer() || prefersReducedMotion()) return
+  if (!hero || prefersReducedMotion()) return
+
+  if (!supportsScrollTimeline()) {
+    const layers: [string, number, boolean][] = [
+      ['.exit-photo', 12, false],
+      ['.exit-ring', 30, true],
+      ['.exit-craft', 46, true],
+    ]
+    const copy = hero.querySelector<HTMLElement>('.hero-copy')
+    const water = hero.querySelector<HTMLElement>('.hero-water')
+    let ticking = false
+    const update = () => {
+      ticking = false
+      const progress = Math.min(window.scrollY / window.innerHeight, 1)
+      for (const [selector, rate, fade] of layers) {
+        const el = hero.querySelector<HTMLElement>(selector)
+        if (!el) continue
+        el.style.transform = `translateY(${(-rate * progress).toFixed(2)}vh)`
+        if (fade) el.style.opacity = String(1 - progress)
+      }
+      if (copy) {
+        const p = Math.min(Math.max(progress / 0.62, 0), 1)
+        copy.style.transform = `translateY(${(-18 * p).toFixed(2)}vh)`
+        copy.style.opacity = String(1 - p)
+      }
+      if (water) {
+        water.style.opacity = String(1 - Math.min(Math.max((progress - 0.55) / 0.45, 0), 1))
+      }
+    }
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true
+        requestAnimationFrame(update)
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    update()
+    cleanupFns.push(() => window.removeEventListener('scroll', onScroll))
+  }
+
+  if (!finePointer()) return
 
   const onMove = (event: PointerEvent) => {
     const rect = hero.getBoundingClientRect()
