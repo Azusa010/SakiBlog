@@ -81,44 +81,51 @@ onBeforeUnmount(() => {
 <template>
   <div class="home">
     <section ref="heroEl" class="hero">
-      <!-- 真实摄影底图:山影与星空 -->
-      <img class="hero-photo" :src="heroDusk" alt="" aria-hidden="true" fetchpriority="high" />
+      <!-- 退场包装层:滚动驱动的 keyframes 作用于包装层,不与内部元素的视差 transform 冲突 -->
+      <div class="exit exit-photo">
+        <!-- 真实摄影底图:山影与星空 -->
+        <img class="hero-photo" :src="heroDusk" alt="" aria-hidden="true" fetchpriority="high" />
+      </div>
       <!-- 色彩分级与可读性叠层 -->
       <div class="hero-tint" aria-hidden="true"></div>
 
       <!-- 光环:渐变底部透明,主峰自然"穿出"环的下缘 -->
-      <svg class="hero-ring" viewBox="0 0 600 600" aria-hidden="true">
-        <defs>
-          <linearGradient id="ring-grad" x1="0.3" y1="1" x2="0.78" y2="0">
-            <stop offset="0" stop-color="#f0c088" stop-opacity="0" />
-            <stop offset="0.45" stop-color="#f0c088" stop-opacity="0" />
-            <stop offset="0.68" stop-color="#f0c088" stop-opacity="0.5" />
-            <stop offset="0.86" stop-color="#ffe9c4" stop-opacity="0.95" />
-            <stop offset="1" stop-color="#fff3dd" />
-          </linearGradient>
-          <filter id="ring-soft" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="7" />
-          </filter>
-        </defs>
-        <g class="ring">
-          <circle cx="300" cy="300" r="282" fill="none" stroke="url(#ring-grad)" stroke-width="10" filter="url(#ring-soft)" opacity="0.5" />
-          <circle cx="300" cy="300" r="282" fill="none" stroke="url(#ring-grad)" stroke-width="2.5" />
-        </g>
-      </svg>
+      <div class="exit exit-ring">
+        <svg class="hero-ring" viewBox="0 0 600 600" aria-hidden="true">
+          <defs>
+            <linearGradient id="ring-grad" x1="0.3" y1="1" x2="0.78" y2="0">
+              <stop offset="0" stop-color="#f0c088" stop-opacity="0" />
+              <stop offset="0.45" stop-color="#f0c088" stop-opacity="0" />
+              <stop offset="0.68" stop-color="#f0c088" stop-opacity="0.5" />
+              <stop offset="0.86" stop-color="#ffe9c4" stop-opacity="0.95" />
+              <stop offset="1" stop-color="#fff3dd" />
+            </linearGradient>
+            <filter id="ring-soft" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="7" />
+            </filter>
+          </defs>
+          <g class="ring">
+            <circle cx="300" cy="300" r="282" fill="none" stroke="url(#ring-grad)" stroke-width="10" filter="url(#ring-soft)" opacity="0.5" />
+            <circle cx="300" cy="300" r="282" fill="none" stroke="url(#ring-grad)" stroke-width="2.5" />
+          </g>
+        </svg>
+      </div>
 
       <!-- 纸飞机与拖尾 -->
-      <svg class="hero-craft" viewBox="0 0 220 120" aria-hidden="true">
-        <path
-          class="trail"
-          d="M8 96 C 70 78 130 48 178 26"
-          fill="none"
-          stroke="#e8e6e1"
-          stroke-opacity="0.3"
-          stroke-width="1"
-          stroke-dasharray="3 9"
-        />
-        <path class="plane" d="M182 24 L214 12 L196 40 L188 30 Z" fill="#f2ece2" />
-      </svg>
+      <div class="exit exit-craft">
+        <svg class="hero-craft" viewBox="0 0 220 120" aria-hidden="true">
+          <path
+            class="trail"
+            d="M8 96 C 70 78 130 48 178 26"
+            fill="none"
+            stroke="#e8e6e1"
+            stroke-opacity="0.3"
+            stroke-width="1"
+            stroke-dasharray="3 9"
+          />
+          <path class="plane" d="M182 24 L214 12 L196 40 L188 30 Z" fill="#f2ece2" />
+        </svg>
+      </div>
 
       <!-- 水面:沉入夜色 + 倒影光斑 + 微光 -->
       <div class="hero-water" aria-hidden="true">
@@ -210,6 +217,89 @@ onBeforeUnmount(() => {
   bottom: 0;
   left: 0;
   height: 30%;
+}
+
+/* 滚动退场:hero 各层随滚动距离按不同速率上移淡出
+   (CSS scroll-driven,显式 scroll(root)——祖先的 overflow: hidden 会
+    捕获 view() 时间线,root 滚动容器不受影响;
+    不支持的浏览器无动画,自然滚动) */
+.exit {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll()) {
+    .exit-photo,
+    .exit-ring,
+    .exit-craft,
+    .hero-copy,
+    .hero-water {
+      animation-timeline: scroll(root);
+      animation-fill-mode: both;
+      animation-timing-function: linear;
+    }
+
+    /* 纸飞机跑得最快,光环次之,照片最慢——退场也保持纵深 */
+    .exit-photo,
+    .exit-ring,
+    .exit-craft {
+      animation-name: exit-layer;
+      animation-range: 0vh 100vh;
+    }
+
+    .exit-craft {
+      animation-name: exit-craft;
+    }
+
+    .exit-ring {
+      animation-name: exit-ring;
+    }
+
+    .hero-copy {
+      animation-name: exit-copy;
+      animation-range: 18vh 62vh;
+    }
+
+    .hero-water {
+      animation-name: exit-water;
+      animation-range: 55vh 100vh;
+    }
+  }
+}
+
+@keyframes exit-layer {
+  to {
+    transform: translateY(-12vh);
+  }
+}
+
+@keyframes exit-ring {
+  to {
+    transform: translateY(-30vh);
+    opacity: 0;
+  }
+}
+
+@keyframes exit-craft {
+  to {
+    transform: translateY(-46vh);
+    opacity: 0;
+  }
+}
+
+@keyframes exit-copy {
+  to {
+    transform: translateY(-18vh);
+    opacity: 0;
+  }
+}
+
+@keyframes exit-water {
+  to {
+    opacity: 0;
+  }
 }
 
 .glow-reflection {

@@ -13,8 +13,24 @@ test('首页展示博客简介与最新文章', async ({ page }) => {
   await expect(page.locator('.post-card').first()).toBeVisible()
 })
 
-test('文章列表按发布时间从新到旧', async ({ page }) => {
-  await page.goto('/posts')
+test('hero 元素随滚动退场并过渡到最新文章', async ({ page }) => {
+  await page.goto('/')
+  // 等待会话载入动画结束(元素卸载即完成,无固定等待)
+  await expect(page.locator('.boot')).toBeHidden()
+
+  const copy = page.locator('.hero-copy')
+  const before = Number(await copy.evaluate((el) => getComputedStyle(el).opacity))
+
+  await page.mouse.wheel(0, 450)
+  await expect
+    .poll(async () => Number(await copy.evaluate((el) => getComputedStyle(el).opacity)))
+    .toBeLessThan(before)
+
+  await page.mouse.wheel(0, 900)
+  await expect(page.getByRole('heading', { name: '最新文章' })).toBeInViewport()
+})
+
+test('文章列表按发布时间从新到旧', async ({ page }) => {  await page.goto('/posts')
   const titles = page.locator('.post-card .post-title')
   await expect(titles.first()).toContainText('周末爬山的随笔')
   expect(await titles.count()).toBeGreaterThanOrEqual(5)
