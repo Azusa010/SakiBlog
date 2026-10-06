@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { fetchPosts, type PostSummary } from '@/api/posts'
+import { useBootStore } from '@/stores/boot'
 import PostCard from '@/components/PostCard.vue'
 import heroDusk from '@/assets/hero-dusk.jpg'
 
 /**
  * 首页(FR-HOME-001 ~ 004):整屏电影感 hero + 最新文章列表。
- * 场景底图为真实摄影(Unsplash photo-1483728642387,Unsplash License),
- * 光环 / 纸飞机 / 水面为 SVG 与渐变叠加;精细指针下三层视差。
+ * 载入编舞 = hero 的"未完成态":光环只画一半(光点沿弧线行进至顶端闭合)
+ * → 雾气散开山体呈现 → 纸飞机从弧线右端飞出 → 文案与导航淡入。
+ * 场景底图为真实摄影(Unsplash photo-1483728642387,Unsplash License)。
  */
+const boot = useBootStore()
 const posts = ref<PostSummary[]>([])
 const state = ref<'loading' | 'ready' | 'error'>('loading')
 const heroEl = ref<HTMLElement | null>(null)
@@ -26,12 +29,60 @@ async function load() {
 
 onMounted(load)
 
-function finePointer(): boolean {
-  return typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches
-}
+// ---------- 载入编舞进度机 ----------
+const DURATION = 2200
+const progress = ref(0)
+let rafId = 0
+let startAt = 0
 
 function prefersReducedMotion(): boolean {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3)
+}
+
+function clamp01(t: number): number {
+  return Math.min(Math.max(t, 0), 1)
+}
+
+// 弧线 0~0.5 闭合,雾气 0.5~0.8 消散,纸飞机 0.8~0.95 飞出,完成后文案与导航淡入
+const arcPhase = computed(() => easeOutCubic(clamp01(progress.value / 0.5)))
+const mistOpacity = computed(() => 1 - easeOutCubic(clamp01((progress.value - 0.5) / 0.3)))
+const planePhase = computed(() => easeOutCubic(clamp01((progress.value - 0.8) / 0.15)))
+const planeOpacity = computed(() => clamp01((progress.value - 0.8) / 0.05))
+const ringOffset = computed(() => 50 - 50 * arcPhase.value)
+const dotAngle = computed(() => (100 - ringOffset.value) * 3.6)
+const dotOpacity = computed(() => 1 - clamp01((progress.value - 0.5) / 0.1))
+
+function finishChoreography() {
+  cancelAnimationFrame(rafId)
+  window.removeEventListener('keydown', onBootEsc)
+  boot.finish()
+}
+
+function onBootEsc(event: KeyboardEvent) {
+  if (event.key === 'Escape') skipBoot()
+}
+
+function skipBoot() {
+  if (boot.done) return
+  progress.value = 1
+  finishChoreography()
+}
+
+function tickBoot(now: number) {
+  if (!startAt) startAt = now
+  const linear = Math.min((now - startAt) / DURATION, 1)
+  progress.value = easeOutCubic(linear)
+  if (linear < 1) {
+    rafId = requestAnimationFrame(tickBoot)
+  } else {
+    window.setTimeout(() => {
+      if (!boot.done) boot.finish()
+    }, 250)
+  }
 }
 
 // 鼠标视差(--mx/--my 写在 hero 上,照片/光环/纸飞机按深度取不同系数)
@@ -44,7 +95,20 @@ function supportsScrollTimeline(): boolean {
   return typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('animation-timeline: scroll()')
 }
 
+function finePointer(): boolean {
+  return typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches
+}
+
 onMounted(() => {
+  // 载入编舞:未完成则启动,Esc/点击可跳过
+  if (!boot.done) {
+    window.addEventListener('keydown', onBootEsc)
+    rafId = requestAnimationFrame(tickBoot)
+  }
+  cleanupFns.push(() => {
+    if (!boot.done) boot.finish() // 中途离开视作已看过,避免回切重播
+  })
+
   const hero = heroEl.value
   if (!hero || prefersReducedMotion()) return
 
@@ -121,12 +185,15 @@ onMounted(() => {
 onBeforeUnmount(() => {
   cleanupFns.forEach((fn) => fn())
   cleanupFns = []
+  cancelAnimationFrame(rafId)
+  window.removeEventListener('keydown', onBootEsc)
+  if (!boot.done) boot.finish()
 })
 </script>
 
 <template>
   <div class="home">
-    <section ref="heroEl" class="hero">
+    <section ref="heroEl" class="hero" @click="skipBoot">
       <!-- 退场包装层:滚动驱动的 keyframes 作用于包装层,不与内部元素的视差 transform 冲突 -->
       <div class="exit exit-photo">
         <!-- 真实摄影底图:山影与星空 -->
@@ -135,7 +202,10 @@ onBeforeUnmount(() => {
       <!-- 色彩分级与可读性叠层 -->
       <div class="hero-tint" aria-hidden="true"></div>
 
-      <!-- 光环:渐变底部透明,主峰自然"穿出"环的下缘 -->
+      <!-- 雾气:载入时遮住山体,只露峰顶;随进度消散 -->
+      <div class="hero-mist" :style="{ opacity: mistOpacity }" aria-hidden="true"></div>
+
+      <!-- 光环:载入时只画一半,光点(笔尖)沿弧线行进至顶端闭合 -->
       <div class="exit exit-ring">
         <svg class="hero-ring" viewBox="0 0 600 600" aria-hidden="true">
           <defs>
@@ -150,26 +220,47 @@ onBeforeUnmount(() => {
               <feGaussianBlur stdDeviation="7" />
             </filter>
           </defs>
-          <g class="ring">
-            <circle cx="300" cy="300" r="282" fill="none" stroke="url(#ring-grad)" stroke-width="10" filter="url(#ring-soft)" opacity="0.5" />
-            <circle cx="300" cy="300" r="282" fill="none" stroke="url(#ring-grad)" stroke-width="2.5" />
+          <!-- 旋转 -90°:路径起点移到 12 点方向,弧线顺时针生长 -->
+          <g class="ring" transform="rotate(-90 300 300)">
+            <circle
+              pathLength="100"
+              :stroke-dasharray="100"
+              :stroke-dashoffset="ringOffset"
+              cx="300" cy="300" r="282" fill="none" stroke="url(#ring-grad)" stroke-width="10" filter="url(#ring-soft)" opacity="0.5"
+            />
+            <circle
+              pathLength="100"
+              :stroke-dasharray="100"
+              :stroke-dashoffset="ringOffset"
+              cx="300" cy="300" r="282" fill="none" stroke="url(#ring-grad)" stroke-width="2.5"
+            />
+          </g>
+          <g
+            class="ring-dot"
+            :transform="`rotate(${dotAngle} 300 300)`"
+            :style="{ opacity: dotOpacity }"
+          >
+            <circle cx="300" cy="18" r="12" fill="#ffe9c4" opacity="0.4" filter="url(#ring-soft)" />
+            <circle cx="300" cy="18" r="4.5" fill="#fff3dd" />
           </g>
         </svg>
       </div>
 
-      <!-- 纸飞机与拖尾 -->
+      <!-- 纸飞机与拖尾:闭合后从弧线右端飞出 -->
       <div class="exit exit-craft">
         <svg class="hero-craft" viewBox="0 0 220 120" aria-hidden="true">
-          <path
-            class="trail"
-            d="M8 96 C 70 78 130 48 178 26"
-            fill="none"
-            stroke="#e8e6e1"
-            stroke-opacity="0.3"
-            stroke-width="1"
-            stroke-dasharray="3 9"
-          />
-          <path class="plane" d="M182 24 L214 12 L196 40 L188 30 Z" fill="#f2ece2" />
+          <g :style="{ opacity: planeOpacity, transform: `translate(${(1 - planePhase) * -90}px, ${(1 - planePhase) * 62}px)` }">
+            <path
+              class="trail"
+              d="M8 96 C 70 78 130 48 178 26"
+              fill="none"
+              stroke="#e8e6e1"
+              stroke-opacity="0.3"
+              stroke-width="1"
+              stroke-dasharray="3 9"
+            />
+            <path class="plane" d="M182 24 L214 12 L196 40 L188 30 Z" fill="#f2ece2" />
+          </g>
         </svg>
       </div>
 
@@ -181,7 +272,13 @@ onBeforeUnmount(() => {
         <span class="shimmer-line" style="left: 24%; width: 26%; top: 72%"></span>
       </div>
 
-      <div class="hero-copy">
+      <!-- 底部金线进度条,与弧线光点上下呼应 -->
+      <div class="hero-progress" :style="{ opacity: boot.done ? 0 : 1 }" aria-hidden="true">
+        <span class="hero-progress-fill" :style="{ width: `${progress * 100}%` }"></span>
+      </div>
+
+      <!-- 文案:编舞完成后挂载,v-reveal 依次入场 -->
+      <div v-if="boot.done" class="hero-copy">
         <h1 class="hero-title" aria-label="在文字中,遇见更大的世界。"><span class="line" aria-hidden="true"><span class="line-inner" style="--line: 0">在文字中,</span></span><span class="line" aria-hidden="true"><span class="line-inner" style="--line: 1">遇见更大的世界。</span></span></h1>
         <p v-reveal="3" class="hero-sub" lang="en">
           <span v-scramble class="sub-line">In words,</span>
@@ -263,6 +360,43 @@ onBeforeUnmount(() => {
   bottom: 0;
   left: 0;
   height: 30%;
+}
+
+/* 雾气:载入时遮住山体,只露峰顶 */
+.hero-mist {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 58%;
+  background:
+    radial-gradient(90% 70% at 50% 100%, rgb(206 216 226 / 0.85), rgb(164 180 198 / 0.5) 48%, rgb(164 180 198 / 0) 78%),
+    linear-gradient(180deg, rgb(173 189 205 / 0) 0%, rgb(196 208 220 / 0.38) 45%, rgb(228 233 239 / 0.85) 100%);
+  pointer-events: none;
+}
+
+/* 底部金线进度条:与弧线光点上下呼应 */
+.hero-progress {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  width: min(24rem, 60vw);
+  height: 2px;
+  transform: translateX(-50%);
+  background: rgb(255 255 255 / 0.16);
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+.hero-progress-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, rgb(240 201 136 / 0.65), #fff3dd);
+  transition: width 60ms linear;
+}
+
+.ring-dot {
+  will-change: transform;
 }
 
 /* 滚动退场:hero 各层随滚动距离按不同速率上移淡出

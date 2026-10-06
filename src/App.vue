@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { currentTheme, saveTheme, type Theme } from '@/theme'
+import { useBootStore } from '@/stores/boot'
 import BootLoader from '@/components/BootLoader.vue'
 
 // FR-SEARCH-001/003:主要页面提供搜索入口,空关键词不触发导航
@@ -54,22 +55,25 @@ function toggleTheme(event?: MouseEvent) {
   theme.value = next
 }
 
-// boot 载入动画:每个会话首次进站出现;reduced-motion 用户直接跳过
-const BOOT_STORAGE_KEY = 'sakiblog:booted'
-const booting = ref(!sessionStorage.getItem(BOOT_STORAGE_KEY) && !prefersReducedMotion())
-
-function finishBoot() {
-  sessionStorage.setItem(BOOT_STORAGE_KEY, '1')
-  booting.value = false
-}
-
-// 首页头部悬浮在 hero 场景之上
+// 首屏载入编舞:状态在 boot store(session-once)。
+// 落地在首页时由 Home 播放"未完成态 hero → 完成"编舞;
+// 落地在其他页时用极简 overlay 兜底;reduced-motion 用户直接跳过。
+const boot = useBootStore()
 const isHome = computed(() => route.path === '/')
+
+onMounted(() => {
+  if (prefersReducedMotion()) {
+    boot.finish()
+  }
+})
 </script>
 
 <template>
   <div class="layout">
-    <header class="site-header" :class="{ overlaid: isHome }">
+    <header
+      class="site-header"
+      :class="[{ overlaid: isHome }, { 'boot-hidden': !boot.done }]"
+    >
       <div class="header-inner">
         <RouterLink class="brand" to="/">
           <svg class="brand-mark" viewBox="0 0 24 16" aria-hidden="true">
@@ -124,7 +128,8 @@ const isHome = computed(() => route.path === '/')
     </footer>
 
     <Transition name="boot">
-      <BootLoader v-if="booting" @done="finishBoot" />
+      <!-- 非首页落地时的兜底载入层;首页的载入编舞由 Home 的 hero 承担 -->
+      <BootLoader v-if="!boot.done && !isHome" @done="boot.finish()" />
     </Transition>
   </div>
 </template>
@@ -139,6 +144,13 @@ const isHome = computed(() => route.path === '/')
 .site-header {
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg);
+  transition: opacity 0.8s ease;
+}
+
+/* 载入编舞期间隐藏头部,完成后淡入 */
+.site-header.boot-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* 首页:头部悬浮在 hero 场景上,文字用场景同款浅色 */
