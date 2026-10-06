@@ -5,6 +5,7 @@ import { currentTheme, saveTheme, type Theme } from '@/theme'
 import { useBootStore } from '@/stores/boot'
 import BootLoader from '@/components/BootLoader.vue'
 import CursorFx from '@/components/CursorFx.vue'
+import PlaneSprite from '@/components/PlaneSprite.vue'
 
 // FR-SEARCH-001/003:主要页面提供搜索入口,空关键词不触发导航
 const route = useRoute()
@@ -132,6 +133,8 @@ onMounted(() => {
       <!-- 非首页落地时的兜底载入层;首页的载入编舞由 Home 的 hero 承担 -->
       <BootLoader v-if="!boot.done && !isHome" @done="boot.finish()" />
     </Transition>
+
+    <PlaneSprite />
 
     <CursorFx />
   </div>

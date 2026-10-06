@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchPosts, type PostSummary } from '@/api/posts'
 import PostCard from '@/components/PostCard.vue'
@@ -12,6 +12,7 @@ defineOptions({
 /**
  * 文章列表页(SRS FR-LIST-001 ~ FR-LIST-004):
  * 已发布文章按发布时间从新到旧,分页状态放在 URL 查询参数里便于回退与分享。
+ * 航线图:一条金色虚线把每篇文章的编号串成航段,滚动时逐段描画。
  */
 const PAGE_SIZE = 10
 
@@ -40,6 +41,65 @@ async function load() {
   }
 }
 
+// ---------- 航线图 ----------
+const listEl = ref<HTMLElement | null>(null)
+const routeMap = ref({ path: '', width: 0, height: 0 })
+let resizeObserver: ResizeObserver | null = null
+
+function rebuildRouteMap() {
+  const list = listEl.value
+  if (!list) return
+  const numbers = list.querySelectorAll<HTMLElement>('.post-no')
+  if (numbers.length === 0) {
+    routeMap.value = { path: '', width: 0, height: 0 }
+    return
+  }
+  const bounds = list.getBoundingClientRect()
+  const points = Array.from(numbers).map((el) => {
+    const rect = el.getBoundingClientRect()
+    return [rect.left - bounds.left + 12, rect.top - bounds.top + rect.height / 2] as const
+  })
+  let d = `M ${points[0]![0]} ${points[0]![1]}`
+  for (let i = 1; i < points.length; i += 1) {
+    const [x0, y0] = points[i - 1]!
+    const [x1, y1] = points[i]!
+    const bend = (x0 + x1) / 2 + (i % 2 === 1 ? 30 : -30)
+    d += ` C ${bend} ${y0}, ${bend} ${y1}, ${x1} ${y1}`
+  }
+  routeMap.value = { path: d, width: bounds.width, height: bounds.height }
+}
+
+function stopRouteMapObserver() {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+}
+
+onMounted(() => {
+  if (typeof ResizeObserver !== 'function') return
+  resizeObserver = new ResizeObserver(() => rebuildRouteMap())
+  if (listEl.value) resizeObserver.observe(listEl.value)
+})
+
+onBeforeUnmount(stopRouteMapObserver)
+
+// KeepAlive 缓存页重新进入时重测一遍
+onActivated(() => {
+  void nextTick(rebuildRouteMap)
+})
+
+watch(
+  () => [status.value, posts.value],
+  async () => {
+    if (status.value !== 'ready') return
+    await nextTick()
+    rebuildRouteMap()
+    if (listEl.value && typeof ResizeObserver === 'function' && !resizeObserver) {
+      resizeObserver = new ResizeObserver(() => rebuildRouteMap())
+      resizeObserver.observe(listEl.value)
+    }
+  },
+)
+
 // FR-STATE-005:加载中忽略重复翻页点击
 function goPage(target: number) {
   if (status.value === 'loading') return
@@ -63,7 +123,18 @@ watch(page, load, { immediate: true })
     <p v-else-if="posts.length === 0" class="state-box">还没有已发布的文章。</p>
 
     <template v-else>
-      <PostCard v-for="(post, index) in posts" :key="post.id" :post="post" :index="index" />
+      <div ref="listEl" class="post-list-wrap">
+        <svg
+          v-if="routeMap.path"
+          class="route-map"
+          :viewBox="`0 0 ${routeMap.width} ${routeMap.height}`"
+          aria-hidden="true"
+        >
+          <path class="route-base" :d="routeMap.path" />
+          <path class="route-progress" :d="routeMap.path" pathLength="100" />
+        </svg>
+        <PostCard v-for="(post, index) in posts" :key="post.id" :post="post" :index="index" />
+      </div>
 
       <nav v-if="totalPages > 1" class="pagination" aria-label="分页">
         <button type="button" :disabled="page <= 1" @click="goPage(page - 1)">上一页</button>
@@ -77,6 +148,48 @@ watch(page, load, { immediate: true })
 </template>
 
 <style scoped>
+.post-list-wrap {
+  position: relative;
+}
+
+/* 航线图:虚线为全程航路,金线随滚动逐段描画 */
+.route-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.route-base {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-opacity: 0.28;
+  stroke-width: 1;
+  stroke-dasharray: 2 7;
+}
+
+.route-progress {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .route-progress {
+    animation: route-draw linear both;
+    animation-timeline: view();
+  }
+}
+
+@keyframes route-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 .state-box {
   color: var(--color-text-muted);
 }
