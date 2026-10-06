@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { fetchPosts, type PostSummary } from '@/api/posts'
 import PostCard from '@/components/PostCard.vue'
 
 /**
  * 首页(FR-HOME-001 ~ 004):整屏电影感 hero + 最新文章列表。
- * 场景(天空、光环、山影、纸飞机、水面)为内联 SVG 程序化绘制。
+ * 场景(星空、光环、山影、纸飞机、水面)为内联 SVG 程序化绘制;
+ * 精细指针下四层视差,纸飞机有拖尾与漂浮。
  */
 const posts = ref<PostSummary[]>([])
 const state = ref<'loading' | 'ready' | 'error'>('loading')
+const heroEl = ref<HTMLElement | null>(null)
 
 async function load() {
   state.value = 'loading'
@@ -22,11 +24,62 @@ async function load() {
 }
 
 onMounted(load)
+
+function finePointer(): boolean {
+  return typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+// 鼠标视差(--mx/--my 写在 hero 上,各层按深度取不同系数)与磁吸 CTA;
+// 值直接写 CSS 变量,不进框架状态
+let cleanupFns: (() => void)[] = []
+
+onMounted(() => {
+  const hero = heroEl.value
+  if (!hero || !finePointer() || prefersReducedMotion()) return
+
+  const onMove = (event: PointerEvent) => {
+    const rect = hero.getBoundingClientRect()
+    const mx = ((event.clientX - rect.left) / rect.width) * 2 - 1
+    const my = ((event.clientY - rect.top) / rect.height) * 2 - 1
+    hero.style.setProperty('--mx', mx.toFixed(3))
+    hero.style.setProperty('--my', my.toFixed(3))
+  }
+  hero.addEventListener('pointermove', onMove)
+  cleanupFns.push(() => hero.removeEventListener('pointermove', onMove))
+
+  const cta = hero.querySelector<HTMLElement>('.hero-cta')
+  if (cta) {
+    const onCtaMove = (event: PointerEvent) => {
+      const rect = cta.getBoundingClientRect()
+      const dx = event.clientX - (rect.left + rect.width / 2)
+      const dy = event.clientY - (rect.top + rect.height / 2)
+      cta.style.transform = `translate(${(dx * 0.12).toFixed(1)}px, ${(dy * 0.28).toFixed(1)}px)`
+    }
+    const onCtaLeave = () => {
+      cta.style.transform = ''
+    }
+    cta.addEventListener('pointermove', onCtaMove)
+    cta.addEventListener('pointerleave', onCtaLeave)
+    cleanupFns.push(() => {
+      cta.removeEventListener('pointermove', onCtaMove)
+      cta.removeEventListener('pointerleave', onCtaLeave)
+    })
+  }
+})
+
+onBeforeUnmount(() => {
+  cleanupFns.forEach((fn) => fn())
+  cleanupFns = []
+})
 </script>
 
 <template>
   <div class="home">
-    <section class="hero">
+    <section ref="heroEl" class="hero">
       <svg class="scene" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
         <defs>
           <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
@@ -58,15 +111,53 @@ onMounted(load)
         <rect width="1440" height="580" fill="url(#sky)" />
         <rect width="1440" height="580" fill="url(#dawn)" />
 
-        <g class="ring">
-          <circle cx="780" cy="360" r="215" fill="none" stroke="url(#ring)" stroke-width="10" filter="url(#soft)" opacity="0.45" />
-          <circle cx="780" cy="360" r="215" fill="none" stroke="url(#ring)" stroke-width="2.5" />
+        <g class="layer layer-stars">
+          <g class="stars stars-a">
+            <circle cx="120" cy="90" r="1.1" fill="#d8e4ff" />
+            <circle cx="340" cy="150" r="0.9" fill="#d8e4ff" />
+            <circle cx="520" cy="60" r="1.3" fill="#d8e4ff" />
+            <circle cx="700" cy="120" r="0.8" fill="#d8e4ff" />
+            <circle cx="1080" cy="80" r="1.2" fill="#d8e4ff" />
+            <circle cx="1260" cy="180" r="0.9" fill="#d8e4ff" />
+            <circle cx="1360" cy="60" r="1" fill="#d8e4ff" />
+            <circle cx="220" cy="250" r="0.8" fill="#d8e4ff" />
+          </g>
+          <g class="stars stars-b">
+            <circle cx="60" cy="180" r="1.4" fill="#cfe0ff" />
+            <circle cx="430" cy="230" r="1" fill="#cfe0ff" />
+            <circle cx="620" cy="40" r="1.1" fill="#cfe0ff" />
+            <circle cx="930" cy="60" r="0.9" fill="#cfe0ff" />
+            <circle cx="1180" cy="120" r="1.3" fill="#cfe0ff" />
+            <circle cx="1320" cy="260" r="0.8" fill="#cfe0ff" />
+            <circle cx="300" cy="40" r="1" fill="#cfe0ff" />
+            <circle cx="820" cy="150" r="0.9" fill="#cfe0ff" />
+          </g>
         </g>
 
-        <path class="plane" d="M952 226 L996 208 L970 248 L958 234 Z" fill="#f2ece2" />
+        <g class="layer layer-ring">
+          <g class="ring">
+            <circle cx="780" cy="360" r="215" fill="none" stroke="url(#ring)" stroke-width="10" filter="url(#soft)" opacity="0.45" />
+            <circle cx="780" cy="360" r="215" fill="none" stroke="url(#ring)" stroke-width="2.5" />
+          </g>
+        </g>
 
-        <path class="mountain" d="M180 580 L400 468 L520 505 L640 400 L720 345 L800 430 L860 400 L950 480 L1020 458 L1140 580 Z" fill="#0a0f1a" />
-        <path d="M720 345 L800 430 L860 400 L950 480" fill="none" stroke="#e8b877" stroke-opacity="0.3" stroke-width="1.5" />
+        <g class="layer layer-plane">
+          <path
+            class="trail"
+            d="M690 330 C 790 305 880 262 946 226"
+            fill="none"
+            stroke="#e8e6e1"
+            stroke-opacity="0.25"
+            stroke-width="1"
+            stroke-dasharray="3 9"
+          />
+          <path class="plane" d="M952 226 L996 208 L970 248 L958 234 Z" fill="#f2ece2" />
+        </g>
+
+        <g class="layer layer-mountain">
+          <path d="M180 580 L400 468 L520 505 L640 400 L720 345 L800 430 L860 400 L950 480 L1020 458 L1140 580 Z" fill="#0a0f1a" />
+          <path d="M720 345 L800 430 L860 400 L950 480" fill="none" stroke="#e8b877" stroke-opacity="0.3" stroke-width="1.5" />
+        </g>
 
         <rect y="580" width="1440" height="320" fill="url(#water)" />
         <ellipse cx="800" cy="645" rx="430" ry="62" fill="#e8b877" opacity="0.13" filter="url(#soft)" />
@@ -78,10 +169,13 @@ onMounted(load)
       </svg>
 
       <div class="hero-copy">
-        <h1 v-reveal="0" class="hero-title">在文字中,<br />遇见更大的世界。</h1>
-        <p v-reveal="2" class="hero-sub" lang="en">In words,<br />meet a bigger world.</p>
-        <span v-reveal="3" class="hero-dash" aria-hidden="true"></span>
-        <RouterLink v-reveal="4" class="hero-cta" to="/posts">阅读文章 →</RouterLink>
+        <h1 class="hero-title" aria-label="在文字中,遇见更大的世界。"><span class="line" aria-hidden="true"><span class="line-inner" style="--line: 0">在文字中,</span></span><span class="line" aria-hidden="true"><span class="line-inner" style="--line: 1">遇见更大的世界。</span></span></h1>
+        <p v-reveal="3" class="hero-sub" lang="en">
+          <span v-scramble class="sub-line">In words,</span>
+          <span v-scramble class="sub-line">meet a bigger world.</span>
+        </p>
+        <span v-reveal="4" class="hero-dash" aria-hidden="true"></span>
+        <RouterLink v-reveal="5" class="hero-cta" to="/posts">阅读文章 →</RouterLink>
       </div>
     </section>
 
@@ -135,12 +229,25 @@ onMounted(load)
   color: inherit;
 }
 
+.hero-title .line {
+  display: block;
+  overflow: hidden;
+}
+
+.hero-title .line-inner {
+  display: block;
+}
+
 .hero-sub {
   margin: var(--space-4) 0 0;
   color: rgb(232 230 225 / 55%);
   font-size: 0.8125rem;
   letter-spacing: 0.16em;
   line-height: 2;
+}
+
+.hero-sub .sub-line {
+  display: block;
 }
 
 .hero-dash {
@@ -159,6 +266,10 @@ onMounted(load)
   font-family: var(--font-mono);
   font-size: 0.75rem;
   letter-spacing: 0.28em;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.25s var(--ease-out);
 }
 
 .hero-cta:hover {
@@ -193,10 +304,42 @@ onMounted(load)
   text-underline-offset: 3px;
 }
 
-/* 场景微动效:光环呼吸 / 纸飞机漂浮 / 水面微光 */
+/* 场景动效:视差层 / 光环呼吸 / 星点闪烁 / 拖尾行进 / 纸飞机漂浮 / 水面微光 */
 @media (prefers-reduced-motion: no-preference) {
+  .scene .layer {
+    transition: transform 0.45s var(--ease-out);
+  }
+
+  .layer-stars {
+    transform: translate(calc(var(--mx, 0) * -5px), calc(var(--my, 0) * -5px));
+  }
+
+  .layer-ring {
+    transform: translate(calc(var(--mx, 0) * -12px), calc(var(--my, 0) * -12px));
+  }
+
+  .layer-mountain {
+    transform: translate(calc(var(--mx, 0) * 6px), calc(var(--my, 0) * 6px));
+  }
+
+  .layer-plane {
+    transform: translate(calc(var(--mx, 0) * -20px), calc(var(--my, 0) * -20px));
+  }
+
   .ring {
     animation: ring-breathe 6s ease-in-out infinite alternate;
+  }
+
+  .stars-a {
+    animation: twinkle 4s ease-in-out infinite alternate;
+  }
+
+  .stars-b {
+    animation: twinkle 6.5s ease-in-out 1.2s infinite alternate;
+  }
+
+  .trail {
+    animation: trail-march 2.2s linear infinite;
   }
 
   .plane {
@@ -218,6 +361,22 @@ onMounted(load)
   }
 }
 
+@keyframes twinkle {
+  from {
+    opacity: 0.2;
+  }
+
+  to {
+    opacity: 0.85;
+  }
+}
+
+@keyframes trail-march {
+  to {
+    stroke-dashoffset: -48;
+  }
+}
+
 @keyframes plane-float {
   from {
     transform: translate(0, 0) rotate(0deg);
@@ -235,6 +394,24 @@ onMounted(load)
 
   to {
     opacity: 0.16;
+  }
+}
+
+/* 标题两行分别从遮罩内升起 */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-title .line-inner {
+    animation: line-up 0.9s var(--ease-out) both;
+    animation-delay: calc(var(--line) * 0.18s);
+  }
+}
+
+@keyframes line-up {
+  from {
+    transform: translateY(112%);
+  }
+
+  to {
+    transform: none;
   }
 }
 </style>

@@ -148,18 +148,33 @@ button {
 
 /* ---------- 动效体系(尊重 prefers-reduced-motion) ---------- */
 
+::selection {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* 主题切换圆形扩散:接管默认交叉淡化,由 JS 驱动 clip-path */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .reveal {
     opacity: 0;
     transform: translateY(14px);
+    filter: blur(6px);
     transition:
       opacity 0.6s var(--ease-out),
-      transform 0.6s var(--ease-out);
+      transform 0.6s var(--ease-out),
+      filter 0.6s var(--ease-out);
   }
 
   .reveal.reveal-in {
     opacity: 1;
     transform: none;
+    filter: blur(0);
   }
 
   .route-enter-active,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { ApiError, fetchPost, type PostDetail as PostDetailData } from '@/api/posts'
 import { renderMarkdown } from '@/markdown'
@@ -14,6 +14,7 @@ const route = useRoute()
 const post = ref<PostDetailData | null>(null)
 const status = ref<'loading' | 'ready' | 'error' | 'not-found'>('loading')
 const contentEl = ref<HTMLElement | null>(null)
+const activeHeading = ref('')
 
 const renderedContent = computed(() => (post.value ? renderMarkdown(post.value.content) : ''))
 
@@ -34,13 +35,31 @@ const toc = computed<TocItem[]>(() => {
   }))
 })
 
-// 给实际渲染出的标题写上与目录一致的锚点 id
+// 给实际渲染出的标题写上与目录一致的锚点 id,并观察当前阅读位置点亮目录项
+let headingObserver: IntersectionObserver | null = null
+
 watch(renderedContent, async () => {
   await nextTick()
-  contentEl.value
-    ?.querySelectorAll('h2, h3, h4')
-    .forEach((el, index) => el.setAttribute('id', `heading-${index}`))
+  const headings = contentEl.value?.querySelectorAll('h2, h3, h4') ?? []
+  headings.forEach((el, index) => el.setAttribute('id', `heading-${index}`))
+
+  headingObserver?.disconnect()
+  if (typeof IntersectionObserver === 'function' && headings.length > 0) {
+    headingObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            activeHeading.value = entry.target.id
+          }
+        }
+      },
+      { rootMargin: '-15% 0px -70% 0px' },
+    )
+    headings.forEach((el) => headingObserver?.observe(el))
+  }
 })
+
+onBeforeUnmount(() => headingObserver?.disconnect())
 
 function scrollToHeading(id: string) {
   const reduced =
@@ -66,6 +85,8 @@ watch(() => route.params.id, load, { immediate: true })
 
 <template>
   <article>
+    <div class="read-progress" aria-hidden="true"></div>
+
     <p v-if="status === 'loading'">加载中…</p>
 
     <div v-else-if="status === 'not-found'" class="state-box">
@@ -91,7 +112,11 @@ watch(() => route.params.id, load, { immediate: true })
         <strong>目录</strong>
         <ol>
           <li v-for="heading in toc" :key="heading.id" :class="`level-${heading.level}`">
-            <a :href="`#${heading.id}`" @click.prevent="scrollToHeading(heading.id)">
+            <a
+              :href="`#${heading.id}`"
+              :class="{ active: heading.id === activeHeading }"
+              @click.prevent="scrollToHeading(heading.id)"
+            >
               {{ heading.text }}
             </a>
           </li>
@@ -108,11 +133,11 @@ watch(() => route.params.id, load, { immediate: true })
         class="post-neighbors"
         aria-label="上下篇"
       >
-        <RouterLink v-if="post.prev" :to="`/posts/${post.prev.id}`" class="neighbor">
+        <RouterLink v-if="post.prev" :to="`/posts/${post.prev.id}`" class="neighbor neighbor-prev">
           ← {{ post.prev.title }}
         </RouterLink>
         <span v-else aria-hidden="true"></span>
-        <RouterLink v-if="post.next" :to="`/posts/${post.next.id}`" class="neighbor">
+        <RouterLink v-if="post.next" :to="`/posts/${post.next.id}`" class="neighbor neighbor-next">
           {{ post.next.title }} →
         </RouterLink>
       </nav>
@@ -173,10 +198,11 @@ watch(() => route.params.id, load, { immediate: true })
 
 .toc a {
   color: var(--color-text);
-  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-.toc a:hover {
+.toc a:hover,
+.toc a.active {
   color: var(--color-accent);
 }
 
@@ -201,6 +227,65 @@ watch(() => route.params.id, load, { immediate: true })
 .neighbor {
   max-width: 48%;
   overflow-wrap: anywhere;
+  transition:
+    transform 0.25s var(--ease-out),
+    color 0.2s ease;
+}
+
+.neighbor:hover {
+  color: var(--color-accent);
+}
+
+.neighbor-prev:hover {
+  transform: translateX(-4px);
+}
+
+.neighbor-next:hover {
+  transform: translateX(4px);
+}
+
+/* 阅读进度线:滚动驱动(CSS scroll-timeline),不支持的浏览器保持隐形 */
+.read-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  z-index: 90;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll()) {
+    .read-progress {
+      animation: read-grow linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+}
+
+@keyframes read-grow {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* 正文图片悬浮微缩放 */
+.post-content :deep(img) {
+  max-width: 100%;
+  height: auto;
+  transition: transform 0.35s var(--ease-out);
+}
+
+.post-content :deep(img:hover) {
+  transform: scale(1.02);
 }
 
 /* 正文内容可读性优先:Markdown 标题豁免页面级的大写/压缩装饰(NFR-USE-003) */

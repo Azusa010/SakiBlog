@@ -23,11 +23,31 @@ function prefersReducedMotion(): boolean {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-function toggleTheme() {
+function toggleTheme(event?: MouseEvent) {
   const next: Theme = theme.value === 'dark' ? 'light' : 'dark'
-  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown }
+  const doc = document as Document & {
+    startViewTransition?: (cb: () => void) => { ready: Promise<void> }
+  }
   if (!prefersReducedMotion() && typeof doc.startViewTransition === 'function') {
-    doc.startViewTransition(() => saveTheme(next))
+    const transition = doc.startViewTransition(() => saveTheme(next))
+    // 圆形扩散:从切换按钮为圆心揭示新主题(不支持的浏览器走默认交叉淡化)
+    const button = event?.currentTarget as HTMLElement | undefined
+    if (button) {
+      const rect = button.getBoundingClientRect()
+      const x = rect.left + rect.width / 2
+      const y = rect.top + rect.height / 2
+      const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y))
+      transition.ready
+        .then(() => {
+          document.documentElement.animate(
+            {
+              clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`],
+            },
+            { duration: 450, easing: 'ease-in-out', pseudoElement: '::view-transition-new(root)' },
+          )
+        })
+        .catch(() => {})
+    }
   } else {
     saveTheme(next)
   }
@@ -79,7 +99,7 @@ const isHome = computed(() => route.path === '/')
             type="button"
             class="theme-toggle"
             :aria-label="theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
-            @click="toggleTheme"
+            @click="toggleTheme($event)"
           >
             {{ theme === 'dark' ? '☀' : '☾' }}
           </button>
@@ -207,7 +227,26 @@ const isHome = computed(() => route.path === '/')
 }
 
 .site-nav a {
+  position: relative;
   color: var(--color-text-muted);
+}
+
+/* 下划线从左向右生长 */
+.site-nav a::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -3px;
+  left: 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s var(--ease-out);
+}
+
+.site-nav a:hover::after {
+  transform: scaleX(1);
 }
 
 .site-nav a:hover,

@@ -98,13 +98,22 @@ watch(page, load, { immediate: true })
   padding: var(--space-1) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  background: transparent;
+  background-color: transparent;
+  /* hover 底色从左向右扫入 */
+  background-image: linear-gradient(var(--color-surface), var(--color-surface));
+  background-repeat: no-repeat;
+  background-size: 0% 100%;
+  background-position: left;
   color: var(--color-text);
   cursor: pointer;
+  transition:
+    background-size 0.3s var(--ease-out),
+    border-color 0.2s ease;
 }
 
 .pagination button:hover:not(:disabled) {
   border-color: var(--color-accent);
+  background-size: 100% 100%;
 }
 
 .pagination button:disabled {
