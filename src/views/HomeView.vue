@@ -75,8 +75,10 @@ function skipBoot() {
 function tickBoot(now: number) {
   if (!startAt) startAt = now
   const linear = Math.min((now - startAt) / DURATION, 1)
-  progress.value = easeOutCubic(linear)
-  if (linear < 1) {
+  const eased = easeOutCubic(linear)
+  // 真实资源(字体 + 首屏照片解码)就绪前,进度封顶 90%
+  progress.value = Math.min(eased, boot.assetsReady ? 1 : 0.9)
+  if (linear < 1 || !boot.assetsReady) {
     rafId = requestAnimationFrame(tickBoot)
   } else {
     window.setTimeout(() => {
@@ -100,6 +102,13 @@ function finePointer(): boolean {
 }
 
 onMounted(() => {
+  // 真实资源就绪信号:字体 + hero 照片解码
+  const photo = new Image()
+  photo.src = heroDusk
+  const fontsReady = typeof document !== 'undefined' && document.fonts ? document.fonts.ready : Promise.resolve()
+  Promise.all([fontsReady, photo.decode().catch(() => {})])
+    .then(() => boot.markAssetsReady())
+
   // 载入编舞:未完成则启动,Esc/点击可跳过
   if (!boot.done) {
     window.addEventListener('keydown', onBootEsc)

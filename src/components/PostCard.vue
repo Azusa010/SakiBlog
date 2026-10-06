@@ -17,7 +17,10 @@ defineProps<{
       </span>
       <h2 class="post-title">
         <!-- ISO 日期直接截取,保证所有列表项格式一致(SRS NFR-DATA-002) -->
-        <RouterLink :to="`/posts/${post.id}`">{{ post.title }}</RouterLink>
+        <RouterLink
+          :to="`/posts/${post.id}`"
+          :style="{ viewTransitionName: `post-title-${post.id}` }"
+        >{{ post.title }}</RouterLink>
       </h2>
     </div>
     <p class="post-meta">

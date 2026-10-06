@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { scrollToTop } from '@/lib/smoothScroll'
 
 /**
  * 返回顶部(FR-ARTICLE-007):滚动超过一个视口后出现。
@@ -8,9 +9,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 const visible = ref(false)
 
 function toTop() {
-  const reduced =
-    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })
+  scrollToTop()
 }
 
 let observer: IntersectionObserver | null = null

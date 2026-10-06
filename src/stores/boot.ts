@@ -10,6 +10,12 @@ const STORAGE_KEY = 'sakiblog:booted'
 
 export const useBootStore = defineStore('boot', () => {
   const done = ref(readFlag())
+  // 真实资源就绪信号:字体 + 首屏照片解码完成后,编舞进度才允许冲过 90%
+  const assetsReady = ref(false)
+
+  function markAssetsReady() {
+    assetsReady.value = true
+  }
 
   function finish() {
     if (done.value) return
@@ -21,7 +27,7 @@ export const useBootStore = defineStore('boot', () => {
     done.value = true
   }
 
-  return { done, finish }
+  return { done, assetsReady, markAssetsReady, finish }
 })
 
 function readFlag(): boolean {

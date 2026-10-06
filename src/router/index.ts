@@ -1,3 +1,4 @@
+import { nextTick } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -123,5 +124,66 @@ router.beforeEach(async (to) => {
   }
   return true
 })
+
+// ---------- 路由过渡编排(项目定位:前端设计展示) ----------
+// - 进入文章详情:共享元素形变(卡片标题飞成详情页标题,View Transitions API)
+// - 其余导航:新视图从右向左擦入(纸飞机的航线飞行由 PlaneSprite 完成)
+// 不支持 VT 或 prefers-reduced-motion 时全部退化为普通导航。
+
+type VTDocument = Document & {
+  startViewTransition?: (callback: () => void | Promise<void>) => {
+    ready: Promise<void>
+    finished: Promise<void>
+  }
+}
+
+function supportsViewTransition(): boolean {
+  if (typeof document === 'undefined') return false
+  const doc = document as VTDocument
+  if (typeof doc.startViewTransition !== 'function') return false
+  return !(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)
+}
+
+const originalPush = router.push.bind(router)
+let vtBusy = false
+
+router.push = async function pushWithTransition(to) {
+  const doc = document as VTDocument
+  if (vtBusy || !supportsViewTransition()) {
+    return originalPush(to)
+  }
+  const target = router.resolve(to)
+  const from = router.currentRoute.value
+  // 同页重复导航直接走原逻辑
+  if (target.path === from.path && target.query && JSON.stringify(target.query) === JSON.stringify(from.query)) {
+    return originalPush(to)
+  }
+
+  // 共享元素形变:新旧页面都渲染 `post-title-{id}`,浏览器自动完成飞入/飞出
+  if (/^\/posts\/\d+$/.test(target.path)) {
+    await doc.startViewTransition(async () => {
+      await originalPush(to)
+      await nextTick()
+    }).finished.catch(() => {})
+    return
+  }
+
+  // 其余导航:擦入过渡
+  vtBusy = true
+  const transition = doc.startViewTransition(async () => {
+    await originalPush(to)
+    await nextTick()
+  })
+  transition.ready
+    .then(() => {
+      document.documentElement.animate(
+        { clipPath: ['inset(0 100% 0 0)', 'inset(0 0 0 0)'] },
+        { duration: 450, easing: 'ease-in-out', pseudoElement: '::view-transition-new(root)' },
+      )
+    })
+    .catch(() => {})
+  await transition.finished.catch(() => {})
+  vtBusy = false
+} as typeof router.push
 
 export default router

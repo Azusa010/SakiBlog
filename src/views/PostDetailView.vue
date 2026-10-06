@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { ApiError, fetchPost, type PostDetail as PostDetailData } from '@/api/posts'
 import { renderMarkdown } from '@/markdown'
+import { scrollToElement } from '@/lib/smoothScroll'
 import BackToTop from '@/components/BackToTop.vue'
 
 /**
@@ -62,12 +63,8 @@ watch(renderedContent, async () => {
 onBeforeUnmount(() => headingObserver?.disconnect())
 
 function scrollToHeading(id: string) {
-  const reduced =
-    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-  document.getElementById(id)?.scrollIntoView({
-    behavior: reduced ? 'auto' : 'smooth',
-    block: 'start',
-  })
+  const el = document.getElementById(id)
+  if (el) scrollToElement(el)
 }
 
 async function load() {
@@ -101,7 +98,7 @@ watch(() => route.params.id, load, { immediate: true })
     </div>
 
     <template v-else-if="post">
-      <h1>{{ post.title }}</h1>
+      <h1 :style="{ viewTransitionName: `post-title-${post.id}` }">{{ post.title }}</h1>
       <p v-reveal="0" class="post-meta">
         <time :datetime="post.published_at">{{ post.published_at.slice(0, 10) }}</time>
         <span v-if="post.category"> · {{ post.category.name }}</span>

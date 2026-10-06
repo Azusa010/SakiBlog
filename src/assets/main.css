@@ -153,6 +153,20 @@ button {
   color: var(--color-bg);
 }
 
+/* 光标系统接管(仅精细指针):输入类控件保留系统光标保证可用性 */
+html.cursor-fx,
+html.cursor-fx a,
+html.cursor-fx button,
+html.cursor-fx label {
+  cursor: none;
+}
+
+html.cursor-fx input,
+html.cursor-fx textarea,
+html.cursor-fx select {
+  cursor: auto;
+}
+
 /* 主题切换圆形扩散:接管默认交叉淡化,由 JS 驱动 clip-path */
 ::view-transition-old(root),
 ::view-transition-new(root) {
