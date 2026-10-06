@@ -1,21 +1,19 @@
 /*
- * SakiBlog global styles — Industrial Brutalism redesign.
+ * SakiBlog global styles — cinematic dark redesign.
  *
- * 浅色 = Swiss Industrial Print(纸张白 / 碳黑 / 航空红);
- * 深色 = Tactical Telemetry(CRT 黑 / 磷光白 / 同一红)。
- * 主题由 <html data-theme="..."> 驱动(FR-THEME-001 ~ 005)。
- * 全局禁止圆角、渐变、投影;结构线为 1px/2px 实线。
+ * 视觉语言:暗色电影感(深蓝黑夜空 / 暖金微光 / 细分隔线 / 宽字距小号大写标签)。
+ * 主题由 <html data-theme="..."> 驱动(FR-THEME-001 ~ 005);浅色主题为同一布局的纸面版本。
  */
 
 :root {
   color-scheme: light;
 
-  --color-bg: #f4f4f0;
-  --color-surface: #eae8e3;
-  --color-text: #111111;
-  --color-text-muted: #4a4a45;
-  --color-border: #111111;
-  --color-accent: #e61919;
+  --color-bg: #f4f3ef;
+  --color-surface: #eae8e2;
+  --color-text: #1a1d24;
+  --color-text-muted: #5a6472;
+  --color-border: rgb(20 25 35 / 16%);
+  --color-accent: #b5762e;
 
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
@@ -28,23 +26,22 @@
   --space-8: 2rem;
   --space-12: 3rem;
 
-  /* 工业风格:所有直角 */
   --radius: 0;
   --content-width: 44rem;
 
-  /* 动效令牌:工业机械感 = 快出缓收 */
+  /* 动效令牌 */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --color-bg: #0a0a0a;
-  --color-surface: #121212;
-  --color-text: #eaeaea;
-  --color-text-muted: #9a9a9a;
-  --color-border: #2a2a2a;
-  --color-accent: #ff2a2a;
+  --color-bg: #0d1420;
+  --color-surface: #121b2a;
+  --color-text: #e8e6e1;
+  --color-text-muted: #8b95a5;
+  --color-border: rgb(255 255 255 / 14%);
+  --color-accent: #d9a878;
 }
 
 *,
@@ -64,59 +61,23 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: 1rem;
-  line-height: 1.7;
-  position: relative;
-}
-
-/* 机械噪点:全局低透明度颗粒,统一纸面/CRT 质感 */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* CRT 扫描线:仅深色主题,模拟电子束 */
-:root[data-theme='dark'] body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  pointer-events: none;
-  opacity: 0.06;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    #000 2px,
-    #000 4px
-  );
+  font-weight: 400;
+  line-height: 1.8;
+  overflow-x: clip;
 }
 
 h1,
 h2,
 h3,
 h4 {
-  line-height: 1.1;
+  line-height: 1.35;
   margin: 0 0 var(--space-4);
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
+  font-weight: 400;
+  letter-spacing: 0.04em;
 }
 
 h1 {
-  font-size: clamp(2rem, 5vw, 3.25rem);
-  border-bottom: 2px solid var(--color-border);
-  padding-bottom: var(--space-3);
-}
-
-/* 标题内的中英混排:拉丁部分更紧 */
-h1:lang(en),
-h1 code {
-  letter-spacing: -0.03em;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
 }
 
 p {
@@ -125,12 +86,14 @@ p {
 
 a {
   color: var(--color-accent);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
+  text-decoration: none;
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
 }
 
 a:hover {
-  text-decoration-thickness: 2px;
+  opacity: 0.75;
 }
 
 code,
@@ -148,7 +111,6 @@ code {
 pre {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-accent);
   overflow-x: auto;
   padding: var(--space-4);
 }
@@ -159,7 +121,6 @@ pre code {
   padding: 0;
 }
 
-/* 表单控件:直角 + 实线边框 */
 input,
 textarea,
 select,
@@ -167,13 +128,11 @@ button {
   border-radius: 0;
 }
 
-/* 可见焦点(SRS NFR-A11Y-002):红色方括号式强调 */
 :focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+  outline: 1px solid var(--color-accent);
+  outline-offset: 3px;
 }
 
-/* 减少动态效果偏好(SRS NFR-A11Y-005) */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -185,31 +144,27 @@ button {
   }
 }
 
-/* ---------- 动效体系(MOTION_INTENSITY 8;全部尊重 prefers-reduced-motion) ---------- */
+/* ---------- 动效体系(尊重 prefers-reduced-motion) ---------- */
 
-/* 入场揭幕:v-reveal 指令驱动;初始隐藏仅在允许动效时生效 */
 @media (prefers-reduced-motion: no-preference) {
   .reveal {
     opacity: 0;
     transform: translateY(14px);
     transition:
-      opacity 0.5s var(--ease-out),
-      transform 0.5s var(--ease-out);
+      opacity 0.6s var(--ease-out),
+      transform 0.6s var(--ease-out);
   }
 
   .reveal.reveal-in {
     opacity: 1;
     transform: none;
   }
-}
 
-/* 路由切换:轻量淡入上移;boot 揭幕:整层上滑退场 */
-@media (prefers-reduced-motion: no-preference) {
   .route-enter-active,
   .route-leave-active {
     transition:
-      opacity 0.18s ease,
-      transform 0.18s ease;
+      opacity 0.2s ease,
+      transform 0.2s ease;
   }
 
   .route-enter-from {
@@ -222,13 +177,10 @@ button {
   }
 
   .boot-leave-active {
-    transition:
-      transform 0.35s var(--ease-out),
-      opacity 0.35s ease;
+    transition: opacity 0.6s ease;
   }
 
   .boot-leave-to {
-    transform: translateY(-100%);
     opacity: 0;
   }
 }
@@ -240,11 +192,8 @@ button:active {
 
 button {
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-}
-
-a {
-  transition: color 0.15s ease;
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease;
 }

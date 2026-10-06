@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test'
 
 test('首页展示博客简介与最新文章', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('h1')).toHaveText('SakiBlog')
+  await expect(page.locator('h1')).toHaveText('在文字中,遇见更大的世界。')
   await expect(page.getByRole('heading', { name: '最新文章' })).toBeVisible()
   await expect(page.locator('.post-card').first()).toBeVisible()
 })
@@ -72,8 +72,8 @@ test('主题切换立即生效并在刷新后保持', async ({ page }) => {
   expect(initial).toMatch(/light|dark/)
 
   await page.getByRole('button', { name: /切换到/ }).click()
-  const switched = await html.getAttribute('data-theme')
-  expect(switched).not.toBe(initial)
+  const switched = html
+  await expect(switched).not.toHaveAttribute('data-theme', initial)
 
   await page.reload()
   await expect(html).toHaveAttribute('data-theme', switched ?? 'dark')

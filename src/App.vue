@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { currentTheme, saveTheme, type Theme } from '@/theme'
 import BootLoader from '@/components/BootLoader.vue'
 
 // FR-SEARCH-001/003:主要页面提供搜索入口,空关键词不触发导航
+const route = useRoute()
 const router = useRouter()
 const searchQuery = ref('')
 
@@ -41,14 +42,29 @@ function finishBoot() {
   sessionStorage.setItem(BOOT_STORAGE_KEY, '1')
   booting.value = false
 }
+
+// 首页头部悬浮在 hero 场景之上
+const isHome = computed(() => route.path === '/')
 </script>
 
 <template>
   <div class="layout">
-    <header class="site-header">
-      <div class="header-top">
-        <RouterLink class="brand" to="/">SAKIBLOG<sup>®</sup></RouterLink>
+    <header class="site-header" :class="{ overlaid: isHome }">
+      <div class="header-inner">
+        <RouterLink class="brand" to="/">
+          <svg class="brand-mark" viewBox="0 0 24 16" aria-hidden="true">
+            <path d="M1 15 L9 3 L13 9 L16 5 L23 15 Z" fill="currentColor" />
+          </svg>
+          <span>SAKIBLOG</span>
+        </RouterLink>
         <div class="header-actions">
+          <nav class="site-nav" aria-label="主导航">
+            <RouterLink to="/">首页</RouterLink>
+            <RouterLink to="/posts">文章</RouterLink>
+            <RouterLink to="/categories">分类</RouterLink>
+            <RouterLink to="/tags">标签</RouterLink>
+            <RouterLink to="/about">关于</RouterLink>
+          </nav>
           <form class="search-form" role="search" @submit.prevent="submitSearch">
             <input
               v-model="searchQuery"
@@ -65,17 +81,10 @@ function finishBoot() {
             :aria-label="theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
             @click="toggleTheme"
           >
-            {{ theme === 'dark' ? '☀️' : '🌙' }}
+            {{ theme === 'dark' ? '☀' : '☾' }}
           </button>
         </div>
       </div>
-      <nav class="site-nav" aria-label="主导航">
-        <RouterLink to="/"><span class="nav-index">01</span>首页</RouterLink>
-        <RouterLink to="/posts"><span class="nav-index">02</span>文章</RouterLink>
-        <RouterLink to="/categories"><span class="nav-index">03</span>分类</RouterLink>
-        <RouterLink to="/tags"><span class="nav-index">04</span>标签</RouterLink>
-        <RouterLink to="/about"><span class="nav-index">05</span>关于</RouterLink>
-      </nav>
     </header>
 
     <main class="site-main">
@@ -90,9 +99,8 @@ function finishBoot() {
     </main>
 
     <footer class="site-footer">
-      <p>
-        © 2026 SAKIBLOG&nbsp;&nbsp;///&nbsp;&nbsp;REV 1.0&nbsp;&nbsp;///&nbsp;&nbsp;VUE 3 × FASTAPI × MYSQL
-      </p>
+      <p class="footer-tagline">一个记录思考与生活的地方</p>
+      <p class="footer-copy">© 2026 SAKIBLOG</p>
     </footer>
 
     <Transition name="boot">
@@ -109,122 +117,158 @@ function finishBoot() {
 }
 
 .site-header {
-  border-bottom: 2px solid var(--color-border);
-  border-top: 4px solid var(--color-accent);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
 }
 
-.header-top {
+/* 首页:头部悬浮在 hero 场景上,文字用场景同款浅色 */
+.site-header.overlaid {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 100;
+  border-bottom-color: transparent;
+  background: transparent;
+  color: #e8e6e1;
+}
+
+.site-header.overlaid .brand,
+.site-header.overlaid .site-nav a {
+  color: rgb(232 230 225 / 78%);
+}
+
+.site-header.overlaid .site-nav a:hover,
+.site-header.overlaid .site-nav a.router-link-active {
+  color: #f0e9dd;
+}
+
+.site-header.overlaid .search-form input {
+  border-bottom-color: rgb(255 255 255 / 30%);
+  color: #f0e9dd;
+}
+
+.site-header.overlaid .search-form input::placeholder {
+  color: rgb(232 230 225 / 45%);
+}
+
+.site-header.overlaid .search-form button,
+.site-header.overlaid .theme-toggle {
+  color: rgb(232 230 225 / 78%);
+}
+
+.site-header.overlaid .search-form button:hover,
+.site-header.overlaid .theme-toggle:hover {
+  color: #f0e9dd;
+}
+
+.header-inner {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-6);
+  max-width: 84rem;
+  margin: 0 auto;
   padding: var(--space-4) var(--space-6);
-  border-bottom: 1px solid var(--color-border);
 }
 
 .brand {
-  font-weight: 900;
-  font-size: 1.375rem;
-  letter-spacing: -0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
   color: var(--color-text);
-  text-decoration: none;
-  text-transform: uppercase;
-}
-
-.brand sup {
-  color: var(--color-accent);
-  font-size: 0.6em;
-}
-
-.site-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-5, var(--space-6));
-  padding: var(--space-3) var(--space-6);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
-  letter-spacing: 0.08em;
-}
-
-.site-nav a {
-  color: var(--color-text-muted);
+  letter-spacing: 0.32em;
   text-decoration: none;
 }
 
-.site-nav a:hover {
-  color: var(--color-text);
+.brand:hover {
+  opacity: 0.8;
 }
 
-.site-nav a.router-link-active {
-  color: var(--color-accent);
-}
-
-.site-nav a.router-link-active::after {
-  content: ' ▮';
-}
-
-.nav-index {
-  margin-right: var(--space-2);
-  color: var(--color-text-muted);
-  font-size: 0.6875rem;
+.brand-mark {
+  width: 1.375rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-6);
 }
 
-.theme-toggle {
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: 0;
-  background: transparent;
-  cursor: pointer;
-  font-size: 1rem;
-  line-height: 1;
+.site-nav {
+  display: flex;
+  align-items: center;
+  font-size: 0.8125rem;
+  letter-spacing: 0.14em;
 }
 
-.theme-toggle:hover {
-  border-color: var(--color-accent);
+.site-nav a {
+  color: var(--color-text-muted);
+}
+
+.site-nav a:hover,
+.site-nav a.router-link-active {
+  color: var(--color-text);
+}
+
+.site-nav a + a::before {
+  content: '·';
+  margin: 0 var(--space-3);
+  color: var(--color-text-muted);
+  opacity: 0.6;
 }
 
 .search-form {
   display: flex;
-  gap: 0;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .search-form input {
-  width: 10rem;
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
+  width: 7.5rem;
+  padding: var(--space-1) 0;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
   color: var(--color-text);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  transition: border-color 0.2s ease;
+}
+
+.search-form input:focus {
+  outline: none;
+  border-bottom-color: var(--color-accent);
 }
 
 .search-form input::placeholder {
   color: var(--color-text-muted);
 }
 
-.search-form button {
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-left: none;
+.search-form button,
+.theme-toggle {
+  padding: var(--space-1) var(--space-2);
+  border: none;
   background: transparent;
-  color: var(--color-text);
+  color: var(--color-text-muted);
   cursor: pointer;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
 }
 
-.search-form button:hover {
-  background: var(--color-accent);
-  color: #ffffff;
-  border-color: var(--color-accent);
+.search-form button:hover,
+.theme-toggle:hover {
+  color: var(--color-accent);
+}
+
+.theme-toggle {
+  font-size: 0.9375rem;
 }
 
 .site-main {
@@ -236,15 +280,37 @@ function finishBoot() {
 }
 
 .site-footer {
-  padding: var(--space-4) var(--space-6);
-  border-top: 2px solid var(--color-border);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-top: 1px solid var(--color-border);
   color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.22em;
 }
 
 .site-footer p {
   margin: 0;
+}
+
+@media (max-width: 768px) {
+  .header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-4);
+  }
+
+  .site-footer {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
 }
 </style>

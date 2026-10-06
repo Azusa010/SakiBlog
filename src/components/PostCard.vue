@@ -4,7 +4,7 @@ import type { PostSummary } from '@/api/posts'
 
 defineProps<{
   post: PostSummary
-  /** 列表中的序号(从 0 开始),用于展示工业编号 */
+  /** 列表中的序号(从 0 开始),用于展示编号 */
   index?: number
 }>()
 </script>
@@ -22,8 +22,8 @@ defineProps<{
     </div>
     <p class="post-meta">
       <time :datetime="post.published_at">{{ post.published_at.slice(0, 10) }}</time>
-      <span v-if="post.category"> /// {{ post.category.name }}</span>
-      <span v-if="post.tags.length > 0"> /// {{ post.tags.map((tag) => tag.name).join(' · ') }}</span>
+      <span v-if="post.category"> / {{ post.category.name }}</span>
+      <span v-if="post.tags.length > 0"> / {{ post.tags.map((tag) => tag.name).join(' · ') }}</span>
     </p>
     <p class="post-summary">{{ post.summary }}</p>
   </article>
@@ -35,10 +35,6 @@ defineProps<{
   border-bottom: 1px solid var(--color-border);
 }
 
-.post-card:last-child {
-  border-bottom: 2px solid var(--color-border);
-}
-
 .post-head {
   display: flex;
   align-items: baseline;
@@ -47,21 +43,21 @@ defineProps<{
 
 .post-no {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.1em;
   color: var(--color-accent);
 }
 
 .post-title {
   margin: 0;
-  font-size: 1.25rem;
-  text-transform: none;
-  letter-spacing: -0.01em;
+  font-size: 1.125rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
 }
 
 .post-title a {
   color: var(--color-text);
-  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
 .post-title a:hover {
@@ -72,12 +68,13 @@ defineProps<{
   margin: var(--space-1) 0 0;
   color: var(--color-text-muted);
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
 }
 
 .post-summary {
   margin: var(--space-2) 0 0;
   color: var(--color-text-muted);
+  font-size: 0.9375rem;
 }
 </style>

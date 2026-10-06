@@ -2,27 +2,19 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 /**
- * 工业风 boot 载入动画:进度条 + 技术标签 + 阶段读数,约 0.9s。
+ * 载入动画:居中 LOADING 细进度条 + 百分比,约 1.1s。
  * 每个浏览器会话首次进站出现;Esc 或点击可跳过;reduced-motion 下不出现。
  */
 const emit = defineEmits<{
   done: []
 }>()
 
-const DURATION = 900
+const DURATION = 1100
 
 const percent = ref(0)
-const stage = ref('INITIALIZING ///')
 let rafId = 0
 let start = 0
 let finished = false
-
-const STAGES: { at: number; label: string }[] = [
-  { at: 0, label: 'INITIALIZING ///' },
-  { at: 0.35, label: 'LOADING CONTENT ///' },
-  { at: 0.7, label: 'RENDERING INTERFACE ///' },
-  { at: 1, label: 'READY' },
-]
 
 function finish() {
   if (finished) return
@@ -42,11 +34,10 @@ function tick(now: number) {
   const linear = Math.min((now - start) / DURATION, 1)
   const eased = 1 - Math.pow(1 - linear, 3)
   percent.value = eased
-  stage.value = (STAGES.find((item) => eased <= item.at) ?? STAGES[STAGES.length - 1]!).label
   if (linear < 1) {
     rafId = requestAnimationFrame(tick)
   } else {
-    window.setTimeout(finish, 150)
+    window.setTimeout(finish, 200)
   }
 }
 
@@ -63,26 +54,16 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="boot" role="status" aria-label="页面加载中" @click="finish()">
-    <div class="boot-top">
-      <span>[ SAKIBLOG ]</span>
-      <span>REV 1.0</span>
-    </div>
-
     <div class="boot-core">
-      <p class="boot-brand">SAKIBLOG<sup>®</sup></p>
-      <div class="boot-bar">
-        <div class="boot-fill" :style="{ width: `${percent * 100}%` }"></div>
+      <p class="boot-label">LOADING . . .</p>
+      <div class="boot-row">
+        <div class="boot-bar">
+          <div class="boot-fill" :style="{ width: `${percent * 100}%` }"></div>
+        </div>
+        <span class="boot-pct">{{ Math.round(percent * 100) }}%</span>
       </div>
-      <p class="boot-readout">
-        <span>{{ stage }}</span>
-        <span>{{ String(Math.round(percent * 100)).padStart(3, '0') }}%</span>
-      </p>
     </div>
-
-    <div class="boot-bottom">
-      <span>ESC / CLICK TO SKIP</span>
-      <span aria-hidden="true">////////////////////////////////////</span>
-    </div>
+    <span class="boot-brand" aria-hidden="true">SAKIBLOG</span>
   </div>
 </template>
 
@@ -92,63 +73,62 @@ onBeforeUnmount(() => {
   inset: 0;
   z-index: 10000;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: var(--space-6);
-  background:
-    repeating-linear-gradient(90deg, transparent, transparent 7.9vw, var(--color-border) 7.9vw, var(--color-border) calc(7.9vw + 1px)),
-    var(--color-bg);
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #0a1120 0%, #14233a 62%, #1c2f4a 78%, #0d1626 100%);
   cursor: pointer;
-  font-family: var(--font-mono);
-}
-
-.boot-top,
-.boot-bottom {
-  display: flex;
-  justify-content: space-between;
-  color: var(--color-text-muted);
-  font-size: 0.6875rem;
-  letter-spacing: 0.1em;
 }
 
 .boot-core {
-  width: min(32rem, 86vw);
-  margin: 0 auto;
+  width: min(24rem, 78vw);
+  margin-top: 18vh;
+  text-align: center;
 }
 
-.boot-brand {
-  margin: 0 0 var(--space-6);
-  font-family: var(--font-sans);
-  font-size: clamp(2.5rem, 8vw, 4.5rem);
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 0.95;
-  text-transform: uppercase;
+.boot-label {
+  margin: 0 0 var(--space-4);
+  color: rgb(232 230 225 / 85%);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
 }
 
-.boot-brand sup {
-  color: var(--color-accent);
-  font-size: 0.4em;
+.boot-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .boot-bar {
-  height: 6px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  flex: 1;
+  height: 2px;
+  background: rgb(255 255 255 / 18%);
+  overflow: hidden;
 }
 
 .boot-fill {
   height: 100%;
-  background: var(--color-accent);
+  background: #f0e9dd;
   transition: width 80ms linear;
 }
 
-.boot-readout {
-  display: flex;
-  justify-content: space-between;
-  margin: var(--space-3) 0 0;
-  color: var(--color-text);
+.boot-pct {
+  min-width: 2.5rem;
+  color: rgb(232 230 225 / 70%);
+  font-family: var(--font-mono);
   font-size: 0.75rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
+  text-align: right;
+}
+
+.boot-brand {
+  position: absolute;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  color: rgb(232 230 225 / 35%);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.3em;
 }
 </style>
