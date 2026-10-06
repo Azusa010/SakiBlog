@@ -239,8 +239,8 @@ async function act(post: AdminPostSummary, action: 'publish' | 'withdraw' | 'del
 }
 
 .actions .danger:hover {
-  border-color: #c0392b;
-  color: #c0392b;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
 }
 
 .state-box {
@@ -248,7 +248,7 @@ async function act(post: AdminPostSummary, action: 'publish' | 'withdraw' | 'del
 }
 
 .error {
-  color: #c0392b;
+  color: var(--color-danger);
   font-size: 0.875rem;
 }
 </style>

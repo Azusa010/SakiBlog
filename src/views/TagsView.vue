@@ -66,7 +66,7 @@ onMounted(load)
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: var(--space-3) 0;
+  padding: var(--space-4) 0;
   border-bottom: 1px solid var(--color-border);
 }
 

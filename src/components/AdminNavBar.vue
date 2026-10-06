@@ -30,11 +30,9 @@ async function signOut() {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  margin-bottom: var(--space-6);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  padding: var(--space-3) 0;
+  margin-bottom: var(--space-8);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .admin-nav a {

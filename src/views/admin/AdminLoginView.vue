@@ -72,7 +72,7 @@ input {
 }
 
 .error {
-  color: #c0392b;
+  color: var(--color-danger);
   font-size: 0.875rem;
 }
 

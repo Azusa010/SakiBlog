@@ -106,7 +106,7 @@ onMounted(load)
   display: flex;
   align-items: center;
   margin-inline: calc(50% - 50vw);
-  margin-top: calc(-1 * var(--space-8));
+  margin-top: calc(-1 * var(--space-12));
   overflow: hidden;
 }
 

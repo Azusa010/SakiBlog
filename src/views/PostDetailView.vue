@@ -151,10 +151,8 @@ watch(() => route.params.id, load, { immediate: true })
 
 .toc {
   margin: var(--space-4) 0 var(--space-6);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-accent);
-  background: var(--color-surface);
+  padding: var(--space-2) 0 var(--space-2) var(--space-6);
+  border-left: 1px solid var(--color-border);
 }
 
 .toc strong {

@@ -196,8 +196,8 @@ async function remove(item: TaxonomyItem) {
 }
 
 .row-actions .danger:hover {
-  border-color: #c0392b;
-  color: #c0392b;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
 }
 
 .taxonomy-list {
@@ -244,7 +244,7 @@ async function remove(item: TaxonomyItem) {
 }
 
 .error {
-  color: #c0392b;
+  color: var(--color-danger);
   font-size: 0.875rem;
 }
 </style>

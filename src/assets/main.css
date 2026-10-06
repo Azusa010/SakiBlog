@@ -14,6 +14,7 @@
   --color-text-muted: #5a6472;
   --color-border: rgb(20 25 35 / 16%);
   --color-accent: #b5762e;
+  --color-danger: #b03a2e;
 
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
@@ -42,6 +43,7 @@
   --color-text-muted: #8b95a5;
   --color-border: rgb(255 255 255 / 14%);
   --color-accent: #d9a878;
+  --color-danger: #d07a6a;
 }
 
 *,
