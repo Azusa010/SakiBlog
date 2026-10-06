@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 import { fetchPosts, type PostSummary } from '@/api/posts'
 import { useBootStore } from '@/stores/boot'
 import PostCard from '@/components/PostCard.vue'
+import ParticleMountain from '@/components/ParticleMountain.vue'
 import heroDusk from '@/assets/hero-dusk.jpg'
 
 /**
@@ -208,6 +209,9 @@ onBeforeUnmount(() => {
         <!-- 真实摄影底图:山影与星空 -->
         <img class="hero-photo" :src="heroDusk" alt="" aria-hidden="true" fetchpriority="high" />
       </div>
+      <!-- 粒子山增强层:boot 完成后懒加载 three.js;失败时照片 hero 原样 -->
+      <ParticleMountain :enabled="boot.done" />
+
       <!-- 色彩分级与可读性叠层 -->
       <div class="hero-tint" aria-hidden="true"></div>
 
