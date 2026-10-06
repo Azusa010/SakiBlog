@@ -2,8 +2,9 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { ApiError, fetchPost, type PostDetail as PostDetailData } from '@/api/posts'
-import { renderMarkdown } from '@/markdown'
+import { estimateReadingMinutes, renderMarkdown } from '@/markdown'
 import { scrollToElement } from '@/lib/smoothScroll'
+import { useCountUp } from '@/utils/countUp'
 import BackToTop from '@/components/BackToTop.vue'
 
 /**
@@ -18,6 +19,9 @@ const contentEl = ref<HTMLElement | null>(null)
 const activeHeading = ref('')
 
 const renderedContent = computed(() => (post.value ? renderMarkdown(post.value.content) : ''))
+const readingMinutes = computed(() => (post.value ? estimateReadingMinutes(post.value.content) : 0))
+// kinetic 数字:阅读时长随加载滚动到位
+const displayMinutes = useCountUp(readingMinutes)
 
 // 目录(FR-ARTICLE-005):正文含二级或更深层级标题时提供,点击定位到对应标题
 interface TocItem {
@@ -103,6 +107,7 @@ watch(() => route.params.id, load, { immediate: true })
         <time :datetime="post.published_at">{{ post.published_at.slice(0, 10) }}</time>
         <span v-if="post.category"> · {{ post.category.name }}</span>
         <span v-if="post.tags.length > 0"> · {{ post.tags.map((tag) => tag.name).join('、') }}</span>
+        <span> · 预计阅读 <span class="kinetic-number">{{ displayMinutes }}</span> 分钟</span>
       </p>
 
       <nav v-if="toc.length > 0" v-reveal="1" class="toc" aria-label="文章目录">
@@ -283,6 +288,40 @@ watch(() => route.params.id, load, { immediate: true })
 
 .post-content :deep(img:hover) {
   transform: scale(1.02);
+}
+
+.kinetic-number {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+/* 首字下沉 (Drop cap) */
+.post-content :deep(.drop-cap) {
+  float: left;
+  font-family: var(--font-mono);
+  font-size: 3.2em;
+  line-height: 0.85;
+  margin: 0.08em 0.15em 0 0;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* 金句拉引 (Pull quote) */
+.post-content :deep(.pull-quote) {
+  margin: var(--space-8) 0;
+  padding: var(--space-4) var(--space-6);
+  border-left: 2px solid var(--color-accent);
+  background: var(--color-card-bg);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 1.125rem;
+  font-style: italic;
+  color: var(--color-text);
+}
+
+.post-content :deep(.pull-quote p) {
+  margin: 0;
+  line-height: 1.7;
 }
 
 /* 正文内容可读性优先:Markdown 标题豁免页面级的大写/压缩装饰(NFR-USE-003) */
