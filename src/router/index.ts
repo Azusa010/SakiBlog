@@ -52,9 +52,14 @@ const router = createRouter({
       component: () => import('@/views/TagArticlesView.vue'),
     },
     {
-      path: '/search',
-      name: 'search',
-      component: () => import('@/views/SearchView.vue'),
+      path: '/projects',
+      name: 'projects',
+      component: () => import('@/views/ProjectsView.vue'),
+    },
+    {
+      path: '/about',
+      name: 'about',
+      component: () => import('@/views/AboutView.vue'),
     },
     {
       path: '/search',

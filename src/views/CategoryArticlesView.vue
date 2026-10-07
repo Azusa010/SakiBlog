@@ -32,7 +32,7 @@ const displayCount = useCountUp(computed(() => category.value?.article_count ?? 
 </script>
 
 <template>
-  <section>
+  <section class="taxonomy-detail-page">
     <p v-if="status === 'loading'">加载中…</p>
 
     <div v-else-if="status === 'not-found'" class="state-box">
@@ -60,6 +60,12 @@ const displayCount = useCountUp(computed(() => category.value?.article_count ?? 
 </template>
 
 <style scoped>
+.taxonomy-detail-page {
+  position: relative;
+  max-width: 68rem;
+  margin-inline: 0;
+}
+
 .result-count {
   color: var(--color-text-muted);
   font-family: var(--font-mono);

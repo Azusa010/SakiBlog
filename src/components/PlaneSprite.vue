@@ -3,23 +3,23 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 /**
- * 纸飞机全站精灵:每个页面一个"停机位",路由切换时沿弧线巡航过去。
- * 首页不显示(hero 场景里有自己的飞机);离开首页时从场景飞机的位置起航。
+ * 纸鸢微航标 (Origami Waypoint Insignia):
+ * 收敛为精巧典雅的角落折纸微印记,随路由静默巡航至停机位;
+ * 不侵扰视线,在暗夜中呈半透明微光伴随状态。
  */
 const PERCHES: Record<string, { x: string; y: string; rotate: number }> = {
-  home: { x: '58%', y: '22%', rotate: -6 },
-  posts: { x: '9%', y: '14%', rotate: 8 },
-  'post-detail': { x: '85%', y: '17%', rotate: -12 },
-  categories: { x: '87%', y: '15%', rotate: 6 },
-  tags: { x: '87%', y: '15%', rotate: 6 },
-  search: { x: '82%', y: '18%', rotate: -8 },
-  about: { x: '76%', y: '22%', rotate: 5 },
-  'not-found': { x: '50%', y: '34%', rotate: -16 },
+  home: { x: '82%', y: '16%', rotate: -6 },
+  posts: { x: '92%', y: '12%', rotate: 8 },
+  'post-detail': { x: '92%', y: '14%', rotate: -10 },
+  categories: { x: '91%', y: '14%', rotate: 6 },
+  tags: { x: '91%', y: '14%', rotate: 6 },
+  search: { x: '90%', y: '14%', rotate: -8 },
+  about: { x: '88%', y: '16%', rotate: 4 },
+  'not-found': { x: '50%', y: '32%', rotate: -14 },
 }
 
-// 弧线飞行的小技巧:left 用缓出、top 用缓入,两段不同步的插值自然弯出航迹
 const route = useRoute()
-const pos = ref({ left: '58%', top: '22%', transform: 'rotate(-6deg)' })
+const pos = ref({ left: '82%', top: '16%', transform: 'rotate(-6deg)' })
 const noTrans = ref(false)
 const visible = ref(false)
 
@@ -32,9 +32,8 @@ watch(
     visible.value = name !== 'home'
 
     if (prev === 'home') {
-      // 从 hero 场景飞机的位置起航:先无过渡落位,再飞往停机位
       noTrans.value = true
-      pos.value = { left: '58%', top: '20%', transform: 'rotate(-6deg)' }
+      pos.value = { left: '80%', top: '16%', transform: 'rotate(-6deg)' }
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           noTrans.value = false
@@ -57,15 +56,15 @@ watch(
     :style="pos"
     aria-hidden="true"
   >
-    <svg viewBox="0 0 220 120">
+    <svg viewBox="0 0 120 70">
       <path
         class="sprite-trail"
-        d="M8 96 C 70 78 130 48 178 26"
+        d="M6 56 C 40 46 72 28 100 16"
         fill="none"
         stroke-width="1"
-        stroke-dasharray="3 9"
+        stroke-dasharray="2 6"
       />
-      <path class="sprite-plane" d="M182 24 L214 12 L196 40 L188 30 Z" />
+      <path class="sprite-plane" d="M102 15 L118 8 L110 24 L105 18 Z" />
     </svg>
   </div>
 </template>
@@ -73,19 +72,19 @@ watch(
 <style scoped>
 .plane-sprite {
   position: fixed;
-  z-index: 60;
-  width: clamp(96px, 11vmin, 150px);
+  z-index: 40;
+  width: clamp(48px, 6vmin, 76px);
   pointer-events: none;
   opacity: 0;
   transition:
-    left 1.15s cubic-bezier(0.16, 1, 0.3, 1),
-    top 1.45s cubic-bezier(0.6, 0, 0.84, 0.4),
-    transform 1.15s cubic-bezier(0.16, 1, 0.3, 1),
+    left 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+    top 1.4s cubic-bezier(0.6, 0, 0.84, 0.4),
+    transform 1.2s cubic-bezier(0.16, 1, 0.3, 1),
     opacity 0.4s ease;
 }
 
 .plane-sprite.landed {
-  opacity: 0.9;
+  opacity: 0.55;
 }
 
 .plane-sprite.sprite-hidden {
@@ -97,16 +96,16 @@ watch(
 }
 
 .sprite-trail {
-  stroke: var(--color-text-muted);
+  stroke: var(--color-border-glow);
 }
 
 .sprite-plane {
-  fill: var(--color-text);
+  fill: var(--color-accent);
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .plane-sprite svg {
-    animation: sprite-bob 6s ease-in-out infinite alternate;
+    animation: sprite-bob 7s ease-in-out infinite alternate;
   }
 }
 
@@ -116,7 +115,7 @@ watch(
   }
 
   to {
-    transform: translate(6px, -8px) rotate(2.5deg);
+    transform: translate(4px, -6px) rotate(2deg);
   }
 }
 </style>

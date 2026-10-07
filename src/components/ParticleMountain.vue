@@ -2,7 +2,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 /**
- * 粒子山(three.js 增强层,约 600KB 懒加载——Awwwards 级签名时刻):
+ * 粒子山(three.js 增强层,约 600KB 懒加载 - Awwwards 级签名时刻):
  * 按山脊函数生成粒子山脉,底部随风水平漂散,鼠标在粒子场中推开涟漪。
  * 触发条件(全部满足才加载):允许动效 + WebGL 可用 + hero 进入视口。
  * 失败时静默,照片底图原样保留(hero 不依赖本组件)。

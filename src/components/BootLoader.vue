@@ -2,8 +2,9 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 /**
- * 载入动画:居中 LOADING 细进度条 + 百分比,约 1.1s。
- * 每个浏览器会话首次进站出现;Esc 或点击可跳过;reduced-motion 下不出现。
+ * 禅意终端引导启动层 (Zen Bootloader):
+ * 极简居中终端装载进度条 + 百分比, 约 1.1s。
+ * 纯设计令牌驱动, 杜绝硬编码色值。
  */
 const emit = defineEmits<{
   done: []
@@ -37,7 +38,7 @@ function tick(now: number) {
   if (linear < 1) {
     rafId = requestAnimationFrame(tick)
   } else {
-    window.setTimeout(finish, 200)
+    window.setTimeout(finish, 180)
   }
 }
 
@@ -55,7 +56,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="boot" role="status" aria-label="页面加载中" @click="finish()">
     <div class="boot-core">
-      <p class="boot-label">LOADING . . .</p>
+      <p class="boot-label">INITIALIZING ZEN WORKSPACE . . .</p>
       <div class="boot-row">
         <div class="boot-bar">
           <div class="boot-fill" :style="{ width: `${percent * 100}%` }"></div>
@@ -63,7 +64,7 @@ onBeforeUnmount(() => {
         <span class="boot-pct">{{ Math.round(percent * 100) }}%</span>
       </div>
     </div>
-    <span class="boot-brand" aria-hidden="true">SAKIBLOG</span>
+    <span class="boot-brand" aria-hidden="true">SAKIBLOG · ZEN TERMINAL</span>
   </div>
 </template>
 
@@ -71,27 +72,27 @@ onBeforeUnmount(() => {
 .boot {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: var(--z-modal, 100);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #0a1120 0%, #14233a 62%, #1c2f4a 78%, #0d1626 100%);
+  background: radial-gradient(circle at center, var(--color-bg-secondary) 0%, var(--color-bg) 100%);
   cursor: pointer;
 }
 
 .boot-core {
   width: min(24rem, 78vw);
-  margin-top: 18vh;
+  margin-top: 14vh;
   text-align: center;
 }
 
 .boot-label {
   margin: 0 0 var(--space-4);
-  color: rgb(232 230 225 / 85%);
+  color: var(--color-text-muted);
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.42em;
-  text-indent: 0.42em;
+  font-size: 0.72rem;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
 }
 
 .boot-row {
@@ -103,32 +104,34 @@ onBeforeUnmount(() => {
 .boot-bar {
   flex: 1;
   height: 2px;
-  background: rgb(255 255 255 / 18%);
+  background: var(--color-border);
   overflow: hidden;
+  border-radius: var(--radius-pill);
 }
 
 .boot-fill {
   height: 100%;
-  background: #f0e9dd;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-high));
   transition: width 80ms linear;
 }
 
 .boot-pct {
   min-width: 2.5rem;
-  color: rgb(232 230 225 / 70%);
+  color: var(--color-accent);
   font-family: var(--font-mono);
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-align: right;
+  font-weight: 500;
 }
 
 .boot-brand {
   position: absolute;
   right: var(--space-6);
   bottom: var(--space-6);
-  color: rgb(232 230 225 / 35%);
+  color: var(--color-text-dim);
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.24em;
 }
 </style>

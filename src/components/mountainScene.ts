@@ -71,9 +71,9 @@ const FRAGMENT = /* glsl */ `
     float alpha = smoothstep(0.5, 0.06, d) * vFade * (0.32 + 0.22 * vTwinkle);
     if (alpha < 0.01) discard;
 
-    // 柔和优雅的暖金星芒, 不刺眼不过曝
-    vec3 warm = mix(vec3(0.86, 0.70, 0.48), vec3(1.0, 0.94, 0.82), smoothstep(0.5, 0.0, d));
-    gl_FragColor = vec4(warm, alpha);
+    // 柔和空灵的翡翠玉露星芒 (与高地苍翠对齐)
+    vec3 emerald = mix(vec3(0.35, 0.76, 0.54), vec3(0.78, 0.96, 0.85), smoothstep(0.5, 0.0, d));
+    gl_FragColor = vec4(emerald, alpha);
   }
 `
 
