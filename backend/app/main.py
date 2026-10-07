@@ -28,11 +28,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="SakiBlog API", lifespan=lifespan)
 
+cors_origins = get_settings().cors_origins
+use_wildcard = "*" in cors_origins
+
 # Session 先加(CORS 需保持最外层,后添加的中间件在外层)
 app.add_middleware(SessionMiddleware, secret_key=get_settings().secret_key, max_age=7 * 24 * 3600)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_settings().cors_origins,
+    allow_origins=[] if use_wildcard else cors_origins,
+    allow_origin_regex=r"^https?://.*" if use_wildcard else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
