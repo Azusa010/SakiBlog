@@ -165,45 +165,23 @@ onBeforeUnmount(() => {
     </div>
   </div>
 
-  <!-- HUD Alpine Gallery Plaque Wrapper (Z-Index 35, Unblocked) -->
-  <div v-if="!embedded" class="alpine-plaque-wrapper">
-    <div
-      class="alpine-plaque-card"
-      role="button"
-      tabindex="0"
-      data-cursor
-      title="点击切换画卷 / Alpine Gallery"
-      @click="scenic.nextScene"
-      @keydown.enter="scenic.nextScene"
-    >
-      <!-- Left Golden Vertical Accent Line -->
-      <div class="alpine-gold-bar" aria-hidden="true"></div>
-
-      <!-- Animated Text Content Wrapper -->
-      <Transition name="alpine-text-swap" mode="out-in">
-        <div :key="scenic.currentScenic.title" class="alpine-content-body">
-          <div class="alpine-title-row">
-            <h4 class="alpine-title">{{ scenic.currentScenic.title }}</h4>
-            <span v-if="scenic.currentScenic.chineseTitle" class="alpine-title-cn">{{ scenic.currentScenic.chineseTitle }}</span>
-          </div>
-
-          <div class="alpine-meta-block">
-            <div class="alpine-artist">{{ scenic.currentScenic.artistLine }}</div>
-            <div class="alpine-elevation">Elevation: {{ scenic.currentScenic.elevation }}</div>
-          </div>
-
-          <div class="alpine-collection">{{ scenic.currentScenic.collection }}</div>
-        </div>
-      </Transition>
-
-      <!-- Micro Interactive Page Cue (Fades in on hover) -->
-      <div class="alpine-hover-cue" aria-hidden="true">
-        <span>0{{ scenic.currentScenic.index + 1 }} / 04</span>
-        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 18l6-6-6-6" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
+  <!-- Minimal Info Text Wrapper (Z-Index 35) -->
+  <div v-if="!embedded" class="minimal-info-wrapper">
+    <Transition name="alpine-text-swap" mode="out-in">
+      <div 
+        :key="scenic.currentScenic.title" 
+        class="minimal-info-text"
+        role="button"
+        tabindex="0"
+        title="点击切换画卷 / Switch Background"
+        @click="scenic.nextScene"
+        @keydown.enter="scenic.nextScene"
+      >
+        <h4 class="info-title">{{ scenic.currentScenic.title }}</h4>
+        <div class="info-location">Location: {{ scenic.currentScenic.artistLine }}</div>
+        <div class="info-elevation">Elevation: {{ scenic.currentScenic.elevation }}</div>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
@@ -335,286 +313,120 @@ onBeforeUnmount(() => {
 }
 
 /* ========================================================
-   Alpine Gallery Exhibition Plaque (Curated Fine Art)
-   - Matches the authentic Alpine Gallery museum plaque layout
-   - 3px solid warm gold vertical bar on the left edge
-   - Deep smoky petrol/obsidian frosted glass (or warm parchment in light)
-   - Classical Roman uppercase serif title
-   - Italic artist provenance & crisp elevation telemetry
-   - Collection attribution with generous vertical breathing
+   Minimalist Info Text HUD (Bottom Right)
    ======================================================== */
 
-.alpine-plaque-wrapper {
+.minimal-info-wrapper {
   position: fixed;
-  right: max(1.5rem, 3.5vw);
-  bottom: max(1.5rem, 3.5vh);
+  right: max(2.5rem, 4.5vw);
+  bottom: max(2.5rem, 4.5vh);
   z-index: 35;
   pointer-events: none;
 }
 
-.alpine-plaque-card {
-  position: relative;
+.minimal-info-text {
   pointer-events: auto;
   cursor: pointer;
+  text-align: right;
   display: flex;
-  overflow: hidden;
-  min-width: 290px;
-  max-width: 380px;
-  padding: 22px 28px 22px 24px;
-  border-radius: 2px 6px 6px 2px;
-  
-  /* High-transparency misty frosted glass (Authentic Alpine ethereal aesthetic) */
-  background: linear-gradient(135deg, rgba(10, 22, 28, 0.38) 0%, rgba(14, 28, 34, 0.22) 55%, rgba(20, 36, 42, 0.12) 100%);
-  backdrop-filter: blur(14px) saturate(135%);
-  -webkit-backdrop-filter: blur(14px) saturate(135%);
-  
-  border: 1px solid rgba(202, 161, 96, 0.16);
-  border-left: none; /* Managed by .alpine-gold-bar */
-  box-shadow: 
-    0 20px 48px -10px rgba(0, 0, 0, 0.45),
-    inset 0 1px 1px rgba(255, 255, 255, 0.10);
-
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  opacity: 0.85;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
   user-select: none;
-  transition:
-    transform 0.4s cubic-bezier(0.23, 1, 0.32, 1),
-    box-shadow 0.4s cubic-bezier(0.23, 1, 0.32, 1),
-    background-color 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-
-  animation: alpine-enter 0.8s cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation: info-enter 1.2s cubic-bezier(0.23, 1, 0.32, 1) backwards;
   will-change: transform, opacity;
 }
 
-:root[data-theme='light'] .alpine-plaque-card {
-  background: linear-gradient(135deg, rgba(250, 250, 247, 0.42) 0%, rgba(242, 245, 242, 0.22) 100%);
-  border-color: rgba(180, 130, 60, 0.20);
-  box-shadow: 
-    0 16px 40px -10px rgba(59, 130, 246, 0.12),
-    inset 0 1px 1px rgba(255, 255, 255, 0.65);
+.minimal-info-text:hover {
+  opacity: 1;
+  transform: translateY(-2px);
 }
 
-@keyframes alpine-enter {
+.minimal-info-text:active {
+  transform: translateY(1px);
+}
+
+.info-title {
+  font-family: var(--font-display, 'Cormorant Garamond', serif);
+  font-size: 1.4rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--color-text, #e2e8f0);
+  margin: 0;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+}
+
+.info-location {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.55);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.info-elevation {
+  font-family: var(--font-accent, 'EB Garamond', serif);
+  font-size: 0.85rem;
+  font-style: italic;
+  color: rgba(147, 197, 253, 0.75);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+:root[data-theme='light'] .info-title {
+  color: #1e293b;
+  text-shadow: 0 1px 4px rgba(255, 255, 255, 0.8);
+}
+:root[data-theme='light'] .info-location {
+  color: #64748b;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+:root[data-theme='light'] .info-elevation {
+  color: #3b82f6;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+@keyframes info-enter {
   0% {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(15px);
   }
   100% {
-    opacity: 1;
+    opacity: 0.85;
     transform: translateY(0);
   }
-}
-
-/* Left Vertical Gold Bar */
-.alpine-gold-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 3px;
-  background: #caa160;
-  box-shadow: 0 0 8px rgba(202, 161, 96, 0.3);
-  transition: box-shadow 0.3s ease, background-color 0.3s ease;
-}
-
-:root[data-theme='light'] .alpine-gold-bar {
-  background: #b4823c;
-}
-
-.alpine-plaque-card:hover .alpine-gold-bar {
-  background: #deb878;
-  box-shadow: 0 0 16px rgba(222, 184, 120, 0.65), 0 0 4px #caa160;
-}
-
-:root[data-theme='light'] .alpine-plaque-card:hover .alpine-gold-bar {
-  background: #c99347;
-  box-shadow: 0 0 14px rgba(180, 130, 60, 0.5);
-}
-
-.alpine-plaque-card:hover {
-  background: linear-gradient(135deg, rgba(10, 22, 28, 0.48) 0%, rgba(14, 28, 34, 0.32) 55%, rgba(20, 36, 42, 0.20) 100%);
-  transform: translateY(-2px);
-  box-shadow: 
-    0 24px 56px -8px rgba(0, 0, 0, 0.55),
-    inset 0 1px 1px rgba(255, 255, 255, 0.16),
-    0 0 20px rgba(202, 161, 96, 0.15);
-}
-
-:root[data-theme='light'] .alpine-plaque-card:hover {
-  background: linear-gradient(135deg, rgba(250, 250, 247, 0.55) 0%, rgba(242, 245, 242, 0.35) 100%);
-  box-shadow: 
-    0 20px 48px -8px rgba(59, 130, 246, 0.18),
-    inset 0 1px 1px rgba(255, 255, 255, 0.8),
-    0 0 16px rgba(180, 130, 60, 0.15);
-}
-
-.alpine-plaque-card:active {
-  transform: scale(0.985);
-}
-
-/* Content Body */
-.alpine-content-body {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-/* Title */
-.alpine-title-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.alpine-title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: 1.15rem;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #caa160;
-  line-height: 1.25;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
-}
-
-:root[data-theme='light'] .alpine-title {
-  color: #9a6b28;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
-}
-
-.alpine-title-cn {
-  font-family: var(--font-sans);
-  font-size: 0.80rem;
-  color: #caa160;
-  opacity: 0.72;
-  letter-spacing: 0.05em;
-  font-weight: 400;
-  flex-shrink: 0;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-}
-
-:root[data-theme='light'] .alpine-title-cn {
-  color: #9a6b28;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
-}
-
-/* Middle Meta Block (Artist italic & Elevation) */
-.alpine-meta-block {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.alpine-artist {
-  font-family: var(--font-serif-body);
-  font-style: italic;
-  font-size: 0.96rem;
-  color: rgba(245, 250, 255, 0.95);
-  line-height: 1.35;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
-}
-
-:root[data-theme='light'] .alpine-artist {
-  color: #1e293b;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
-}
-
-.alpine-elevation {
-  font-family: var(--font-serif-body);
-  font-style: normal;
-  font-size: 0.94rem;
-  color: rgba(245, 250, 255, 0.92);
-  line-height: 1.35;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
-}
-
-:root[data-theme='light'] .alpine-elevation {
-  color: #334155;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
-}
-
-/* Bottom Collection */
-.alpine-collection {
-  margin-top: 15px;
-  font-family: var(--font-serif-body);
-  font-style: normal;
-  font-size: 0.92rem;
-  color: rgba(235, 242, 248, 0.88);
-  line-height: 1.35;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
-}
-
-:root[data-theme='light'] .alpine-collection {
-  color: #475569;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
-}
-
-/* Micro Hover Cue */
-.alpine-hover-cue {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.08em;
-  color: #caa160;
-  opacity: 0;
-  transform: translateX(4px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  pointer-events: none;
-}
-
-.alpine-plaque-card:hover .alpine-hover-cue {
-  opacity: 0.75;
-  transform: translateX(0);
-}
-
-:root[data-theme='light'] .alpine-hover-cue {
-  color: #9a6b28;
 }
 
 /* Transition Swap for Text */
 .alpine-text-swap-enter-active,
 .alpine-text-swap-leave-active {
-  transition: opacity 0.32s cubic-bezier(0.23, 1, 0.32, 1), transform 0.32s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: opacity 0.4s cubic-bezier(0.23, 1, 0.32, 1), transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .alpine-text-swap-enter-from {
   opacity: 0;
-  transform: translateY(6px);
+  transform: translateY(8px);
 }
 
 .alpine-text-swap-leave-to {
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(-8px);
 }
 
 /* Responsive */
 @media (max-width: 640px) {
-  .alpine-plaque-wrapper {
-    right: 1rem;
-    bottom: 1rem;
-    padding-bottom: env(safe-area-inset-bottom);
+  .minimal-info-wrapper {
+    right: 1.5rem;
+    bottom: 1.5rem;
   }
-  .alpine-plaque-card {
-    min-width: unset;
-    max-width: calc(100vw - 2rem);
-    padding: 18px 22px 18px 20px;
+  .info-title {
+    font-size: 1.2rem;
   }
-  .alpine-title {
-    font-size: 1.05rem;
-  }
-  .alpine-artist,
-  .alpine-elevation,
-  .alpine-collection {
-    font-size: 0.88rem;
-  }
-  .alpine-collection {
-    margin-top: 10px;
+  .info-location,
+  .info-elevation {
+    font-size: 0.7rem;
   }
 }
 </style>

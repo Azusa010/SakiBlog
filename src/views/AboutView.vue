@@ -14,34 +14,34 @@ let ctx: gsap.Context | null = null
 
 const milestones = [
   {
-    period: '2026 · NOW',
-    title: 'SakiBlog 全栈工坊与先锋数字花园',
-    desc: '重构打造集个人主页、作品集展示、技术博客与禅意终端于一体的数字资产；融合 Three.js WebGL 与 FastAPI 全流程自动化守护。',
+    period: '2026 · AI & AGENTS',
+    title: 'Local-first AI & Workflow Platforms',
+    desc: 'Developed personal-agent (a local-first AI assistant with tool calling) and SakiFlow (an AI workflow orchestrator with Monaco Editor). Deeply explored Python RAG architectures.',
   },
   {
-    period: '2025 · EXPLORATION',
-    title: '全栈工程化闭环与深度微服务实践',
-    desc: '深耕 Python/FastAPI 与 Vue 3/TypeScript 现代工程流，注重严格的测试金字塔与类型安全体系。',
+    period: '2026 · DESKTOP EXCELLENCE',
+    title: 'Cross-Platform Desktop Applications',
+    desc: 'Built SakiVault, a modern desktop application for anime tracking and cataloging, leveraging Vue 3 and Electron for seamless native experiences.',
   },
   {
-    period: '2024 · GENESIS',
-    title: '界面美学与极客工具探索',
-    desc: '从命令行工具、Linux 极客环境到现代 Web 先锋动效与无障碍设计的全方位探索。',
+    period: '2026 · AESTHETIC WEB',
+    title: 'SakiBlog & Digital Gardens',
+    desc: 'Crafted SakiBlog, an aesthetic fullstack digital garden fusing minimalist typography, dark mode UI, and a fully functional embedded CLI terminal.',
   },
 ]
 
 const skillGroups = [
   {
-    category: 'FRONTEND · 客户端与创意交互',
-    items: ['Vue 3 (Composition API)', 'TypeScript', 'Three.js / WebGL', 'Vite', 'Pinia', 'Modern CSS / View Transitions'],
+    category: 'FRONTEND & DESKTOP · 客户端与桌面端',
+    items: ['Vue 3 (Composition API)', 'TypeScript', 'Electron', 'Tailwind CSS', 'Pinia', 'Monaco Editor'],
   },
   {
-    category: 'BACKEND · 服务端与数据底座',
-    items: ['Python 3.13', 'FastAPI', 'SQLAlchemy 2.0', 'MySQL 8 (utf8mb4)', 'RESTful APIs', 'JWT & Session Security'],
+    category: 'AI & BACKEND · 人工智能与服务端',
+    items: ['Python', 'RAG (Retrieval-Augmented Generation)', 'LLM Integration', 'FastAPI', 'Node.js'],
   },
   {
-    category: 'ENGINEERING · 质量守卫与工具链',
-    items: ['Vitest / Pytest', 'Playwright E2E', 'oxlint / ESLint 9', 'Git / CI Pipelines', 'Bash / Linux CLI'],
+    category: 'ENGINEERING · 架构与工程化',
+    items: ['Monorepo', 'Git / GitHub Actions', 'RESTful APIs', 'Local-first Architecture', 'UI/UX Design'],
   },
 ]
 
@@ -101,10 +101,10 @@ onBeforeUnmount(() => {
       <!-- Identity badges -->
       <div class="flex flex-wrap justify-center gap-2 mb-12 gs-reveal">
         <span class="text-xs font-mono uppercase tracking-wider px-3.5 py-1 rounded-full border border-blue-400/30 bg-blue-400/5 text-blue-300">
-          Full-Stack Software Engineer
+          Software Engineer
         </span>
         <span class="text-xs font-mono uppercase tracking-wider px-3.5 py-1 rounded-full border border-white/10 bg-white/5 text-slate-400">
-          Creative Technologist
+          AI & Desktop App Developer
         </span>
         <span class="text-xs font-mono uppercase tracking-wider px-3.5 py-1 rounded-full border border-white/10 bg-white/5 text-slate-400">
           Open Source Explorer
@@ -114,14 +114,14 @@ onBeforeUnmount(() => {
       <!-- Letter Body: Centered dense typography -->
       <div class="text-slate-300 text-base md:text-lg leading-[2.2] space-y-8 text-justify letter-body gs-reveal" style="text-align-last: center;">
         <p>
-          <strong class="text-slate-100 font-medium">关于我 · Saki</strong> —
-          I am a full-stack engineer wandering between logic and art. The internet used to be a place of discovery; now it is noisy. I strive to create quiet corners, where typography breathes and interactions feel like gentle whispers rather than loud demands.
+          <strong class="text-slate-100 font-medium">Azusa010</strong> —
+          A software engineer focused on local-first applications, AI agents, and cross-platform architecture.
         </p>
         <p>
-          在代码中寻求秩序，在文字里安放诗意。坚信一个精心调校的 RESTful API 与经过光学字距微调的排版一样，具备同等的审美尊严与内在力量。
+          我主要关注 TypeScript 与 Python 生态，热衷于构建具备良好工程结构的实用产品。近期的开发重心集中在基于 Electron 的现代化桌面应用、RAG 检索增强架构，以及集成大模型工具调用（Tool Calling）的本地化个人 AI 助手。
         </p>
         <p>
-          Currently exploring WebGL, the limits of typography on screens, and building a digital sanctuary that feels quiet and enduring amidst the rapid tide of modern technology.
+          I prefer simple, robust systems over complex abstractions, aiming to deliver software that is both highly functional and aesthetically clean.
         </p>
       </div>
 
@@ -183,7 +183,7 @@ onBeforeUnmount(() => {
           交流与交谈
         </h2>
         <p class="text-slate-400 text-sm md:text-base mb-8 max-w-md mx-auto leading-relaxed font-sans">
-          无论是探讨全栈工程架构、先锋界面设计，还是纯粹分享文字与音乐，欢迎随时建立连接。
+          欢迎就开源项目、系统架构或技术开发相关的话题进行交流。
         </p>
         <p class="text-slate-500 text-xs md:text-sm tracking-widest uppercase flex flex-wrap justify-center items-center gap-6 font-mono">
           <a

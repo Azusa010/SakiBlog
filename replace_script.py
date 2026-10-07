@@ -1,4 +1,9 @@
-<script setup lang="ts">
+﻿import re
+
+with open('src/views/admin/AdminPostEditView.vue', 'r', encoding='utf-8') as f:
+    content = f.read()
+
+new_script = '''<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import {
@@ -13,7 +18,7 @@ import AdminNavBar from '@/components/AdminNavBar.vue'
 import { renderMarkdown } from '@/markdown'
 
 import * as monaco from 'monaco-editor'
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker.js?worker'
+import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 
 self.MonacoEnvironment = {
   getWorker() {
@@ -108,7 +113,7 @@ async function save() {
       message.value = '已保存'
     } else {
       const created = await createAdminPost({ ...form })
-      history.replaceState(null, '', `/admin/posts/${created.id}/edit`)
+      history.replaceState(null, '', /admin/posts/\/edit)
       message.value = '已保存为草稿,完善后可发布'
       await load()
     }
@@ -122,77 +127,62 @@ async function save() {
 // 注册 Markdown 语法片段提示 (Snippets)
 monaco.languages.registerCompletionItemProvider('markdown', {
   provideCompletionItems: (model, position) => {
-    const word = model.getWordUntilPosition(position)
-    const range = {
-      startLineNumber: position.lineNumber,
-      endLineNumber: position.lineNumber,
-      startColumn: word.startColumn,
-      endColumn: word.endColumn
-    }
     const suggestions: monaco.languages.CompletionItem[] = [
       {
         label: 'h2',
         kind: monaco.languages.CompletionItemKind.Snippet,
-        insertText: '## ',
+        insertText: '## \',
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: 'Heading 2',
-        range
+        documentation: 'Heading 2'
       },
       {
         label: 'h3',
         kind: monaco.languages.CompletionItemKind.Snippet,
-        insertText: '### ',
+        insertText: '### \',
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: 'Heading 3',
-        range
+        documentation: 'Heading 3'
       },
       {
         label: 'bold',
         kind: monaco.languages.CompletionItemKind.Snippet,
-        insertText: '****',
+        insertText: '**\**',
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: 'Bold Text',
-        range
+        documentation: 'Bold Text'
       },
       {
         label: 'italic',
         kind: monaco.languages.CompletionItemKind.Snippet,
-        insertText: '**',
+        insertText: '*\*',
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: 'Italic Text',
-        range
+        documentation: 'Italic Text'
       },
       {
         label: 'link',
         kind: monaco.languages.CompletionItemKind.Snippet,
-        insertText: '[]()',
+        insertText: '[\](\)',
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: 'Hyperlink',
-        range
+        documentation: 'Hyperlink'
       },
       {
         label: 'image',
         kind: monaco.languages.CompletionItemKind.Snippet,
-        insertText: '![]()',
+        insertText: '![\](\)',
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: 'Image',
-        range
+        documentation: 'Image'
       },
       {
         label: 'codeblock',
         kind: monaco.languages.CompletionItemKind.Snippet,
-        insertText: '`${1:language}\n\n`',
+        insertText: '`\\\n\\\n`',
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: 'Code Block',
-        range
+        documentation: 'Code Block'
       },
       {
         label: 'quote',
         kind: monaco.languages.CompletionItemKind.Snippet,
-        insertText: '> ',
+        insertText: '> \',
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: 'Blockquote',
-        range
+        documentation: 'Blockquote'
       }
     ]
     return { suggestions }
@@ -238,215 +228,11 @@ onBeforeUnmount(() => {
     editorInstance.value.dispose()
   }
 })
-</script>
+</script>'''
 
-<template>
-  <section>
-    <AdminNavBar />
+content = re.sub(r'<script setup lang="ts">.*?</script>', new_script, content, flags=re.DOTALL)
 
-    <p v-if="status === 'loading'">加载中…</p>
+with open('src/views/admin/AdminPostEditView.vue', 'w', encoding='utf-8') as f:
+    f.write(content)
 
-    <div v-else-if="status === 'not-found'" class="state-box">
-      <p>文章不存在。</p>
-      <p><RouterLink to="/admin/posts">返回文章管理</RouterLink></p>
-    </div>
-
-    <div v-else-if="status === 'error'" class="state-box">
-      <p>加载失败,请稍后重试。</p>
-      <button type="button" @click="load">重试</button>
-    </div>
-
-    <template v-else>
-      <div class="head">
-        <h1>{{ isEdit ? '编辑文章' : '新建文章' }}</h1>
-        <RouterLink to="/admin/posts">返回列表</RouterLink>
-      </div>
-
-      <form class="editor" @submit.prevent="save">
-        <label>
-          标题
-          <input v-model="form.title" type="text" name="title" required maxlength="200" />
-        </label>
-        <label>
-          摘要
-          <textarea v-model="form.summary" name="summary" rows="2" required maxlength="500"></textarea>
-        </label>
-
-        <div class="row">
-          <label>
-            分类
-            <select v-model="form.category_id" name="category">
-              <option :value="null">无分类</option>
-              <option v-for="category in categories" :key="category.id" :value="category.id">
-                {{ category.name }}
-              </option>
-            </select>
-          </label>
-        </div>
-
-        <fieldset>
-          <legend>标签</legend>
-          <label v-for="tag in tags" :key="tag.id" class="checkbox">
-            <input
-              type="checkbox"
-              :checked="form.tag_ids.includes(tag.id)"
-              @change="toggleTag(tag.id, ($event.target as HTMLInputElement).checked)"
-            />
-            {{ tag.name }}
-          </label>
-          <p v-if="tags.length === 0" class="hint">还没有标签,可先到「标签」页创建。</p>
-        </fieldset>
-
-        <div class="editor-pane-container">
-          <div class="editor-pane" ref="monacoContainer"></div>
-          <article class="preview-pane markdown-body" aria-label="预览">
-            <div v-html="previewHtml"></div>
-          </article>
-        </div>
-
-        <div class="toolbar">
-          <button type="button" @click="showPreview = !showPreview">
-            {{ showPreview ? '收起预览' : '预览' }}
-          </button>
-          <button type="submit" :disabled="saving">
-            {{ saving ? '保存中…' : '保存' }}
-          </button>
-          <span v-if="message" class="ok" role="status">{{ message }}</span>
-          <span v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</span>
-        </div>
-      </form>
-
-
-    </template>
-  </section>
-</template>
-
-<style scoped>
-.head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.editor label {
-  display: block;
-  margin-bottom: var(--space-4);
-  color: var(--color-text-muted);
-}
-
-.editor input[type='text'],
-.editor textarea,
-.editor select {
-  display: block;
-  width: 100%;
-  margin-top: var(--space-1);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font: inherit;
-}
-
-.editor .mono {
-  font-family: var(--font-mono);
-}
-
-fieldset {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  margin: 0 0 var(--space-4);
-  color: var(--color-text-muted);
-}
-
-.checkbox {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  margin: var(--space-1) var(--space-3) var(--space-1) 0;
-}
-
-.hint {
-  font-size: 0.875rem;
-}
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.toolbar button {
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.toolbar button:hover:not(:disabled) {
-  border-color: var(--color-accent);
-}
-
-.toolbar button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.ok {
-  color: var(--color-accent);
-  font-size: 0.875rem;
-}
-
-.error {
-  color: var(--color-danger);
-  font-size: 0.875rem;
-}
-
-.preview {
-  margin-top: var(--space-6);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
-}
-
-.state-box {
-  color: var(--color-text-muted);
-}
-
-.state-box button {
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.editor-pane-container {
-  display: flex;
-  height: 60vh;
-  min-height: 500px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  margin-bottom: var(--space-4);
-  overflow: hidden;
-  background: #1e1e1e;
-}
-
-.editor-pane {
-  flex: 1;
-  height: 100%;
-  border-right: 1px solid var(--color-border);
-}
-
-.preview-pane {
-  flex: 1;
-  height: 100%;
-  overflow-y: auto;
-  padding: 16px 24px;
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-
-</style>
+print("Script replaced")
