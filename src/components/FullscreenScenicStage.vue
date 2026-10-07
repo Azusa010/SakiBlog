@@ -6,6 +6,19 @@ import valleyLandscape from '@/assets/highland-valley.jpg'
 import lochLandscape from '@/assets/highland-loch.jpg'
 import duskLandscape from '@/assets/hero-dusk.jpg'
 
+import ParticleMountain from '@/components/ParticleMountain.vue'
+
+const props = withDefaults(
+  defineProps<{
+    embedded?: boolean
+    showParticles?: boolean
+  }>(),
+  {
+    embedded: false,
+    showParticles: true,
+  },
+)
+
 const scenic = useScenicStore()
 
 const scenes = [
@@ -18,6 +31,8 @@ const scenes = [
 const stageClass = computed(() => {
   return {
     'is-dimmed': scenic.isDimmed,
+    'scenic-stage--embedded': props.embedded,
+    'scenic-stage--fullscreen': !props.embedded,
   }
 })
 
@@ -120,8 +135,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <!-- Background Stage -->
-  <div class="fullscreen-scenic-stage" :class="stageClass" aria-hidden="true">
+  <!-- Background Scenic Stage (Full-bleed or Embedded) -->
+  <div class="scenic-stage" :class="stageClass" aria-hidden="true">
     <div class="scenic-viewport" :style="{ transform: stageTransform }">
       <div
         v-for="(scene, idx) in scenes"
@@ -133,7 +148,7 @@ onBeforeUnmount(() => {
         }"
       >
         <img
-          class="scenic-img"
+          class="scenic-img hero-img-pan"
           :src="scene.src"
           :alt="scene.alt"
           :fetchpriority="idx === 0 ? 'high' : 'auto'"
@@ -141,13 +156,17 @@ onBeforeUnmount(() => {
         />
       </div>
 
+      <!-- WebGL Interactive Particle Mountain Layer -->
+      <ParticleMountain v-if="showParticles" :enabled="true" />
+
       <div class="scenic-tint"></div>
       <div class="scenic-mist"></div>
+      <div class="melancholy-overlay"></div>
     </div>
   </div>
 
-<!-- HUD Alpine Gallery Plaque Wrapper (Z-Index 35, Unblocked) -->
-  <div class="alpine-plaque-wrapper">
+  <!-- HUD Alpine Gallery Plaque Wrapper (Z-Index 35, Unblocked) -->
+  <div v-if="!embedded" class="alpine-plaque-wrapper">
     <div
       class="alpine-plaque-card"
       role="button"
@@ -189,24 +208,46 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.fullscreen-scenic-stage {
+.scenic-stage {
+  pointer-events: none;
+  overflow: hidden;
+  user-select: none;
+}
+
+.scenic-stage--fullscreen {
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100vh;
   z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-  user-select: none;
-  background-color: var(--color-bg);
+  background-color: var(--color-bg, #03070d);
 }
 
-.scenic-viewport {
+.scenic-stage--embedded {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  background-color: transparent;
+  border-radius: inherit;
+}
+
+.scenic-stage--fullscreen .scenic-viewport {
   position: absolute;
   top: -16vh;
   left: -5vw;
   width: 110vw;
   height: 132vh;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.scenic-stage--embedded .scenic-viewport {
+  position: absolute;
+  inset: -4%;
+  width: 108%;
+  height: 108%;
   transform-origin: 50% 50%;
   will-change: transform;
 }
@@ -227,11 +268,31 @@ onBeforeUnmount(() => {
   height: 100%;
   object-fit: cover;
   object-position: 50% 36%;
-  filter: brightness(0.72) contrast(1.04) saturate(1.08);
+  filter: grayscale(35%) contrast(110%) brightness(85%) sepia(15%) hue-rotate(185deg);
 }
 
 :root[data-theme='light'] .scenic-img {
-  filter: brightness(0.96) contrast(1.02) saturate(1.02);
+  filter: grayscale(20%) contrast(105%) brightness(95%) sepia(10%) hue-rotate(185deg);
+}
+
+/* Cinematic slow pan from demo */
+.hero-img-pan {
+  animation: slowPan 30s ease-in-out infinite alternate;
+  transform-origin: 50% 50%;
+}
+
+@keyframes slowPan {
+  0% { transform: scale(1.03) translate(0, 0); }
+  100% { transform: scale(1.08) translate(-1.5%, -1%); }
+}
+
+.melancholy-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(3, 7, 13, 0.2) 0%, rgba(3, 7, 13, 0.9) 100%), rgba(15, 30, 50, 0.35);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 2;
 }
 
 .scenic-tint {
@@ -239,22 +300,22 @@ onBeforeUnmount(() => {
   inset: 0;
   background:
     linear-gradient(180deg,
-      rgba(8, 16, 12, 0.44) 0%,
-      rgba(8, 16, 12, 0.16) 28%,
-      rgba(8, 16, 12, 0.32) 70%,
-      rgba(8, 16, 12, 0.72) 100%
+      rgba(3, 7, 13, 0.44) 0%,
+      rgba(3, 7, 13, 0.16) 28%,
+      rgba(3, 7, 13, 0.32) 70%,
+      rgba(3, 7, 13, 0.72) 100%
     ),
-    radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.04) 0%, rgba(8, 16, 12, 0.42) 100%);
+    radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.04) 0%, rgba(3, 7, 13, 0.42) 100%);
   transition: opacity 0.5s ease;
 }
 
 :root[data-theme='light'] .scenic-tint {
   background:
     linear-gradient(180deg,
-      rgba(242, 247, 244, 0.48) 0%,
-      rgba(242, 247, 244, 0.18) 28%,
-      rgba(242, 247, 244, 0.52) 70%,
-      rgba(242, 247, 244, 0.88) 100%
+      rgba(240, 244, 250, 0.48) 0%,
+      rgba(240, 244, 250, 0.18) 28%,
+      rgba(240, 244, 250, 0.52) 70%,
+      rgba(240, 244, 250, 0.88) 100%
     );
 }
 
@@ -264,13 +325,13 @@ onBeforeUnmount(() => {
   bottom: 0;
   left: 0;
   height: 36%;
-  background: radial-gradient(85% 65% at 50% 100%, rgba(130, 201, 160, 0.16), transparent 75%);
+  background: radial-gradient(85% 65% at 50% 100%, rgba(147, 197, 253, 0.16), transparent 75%);
   pointer-events: none;
 }
 
-.fullscreen-scenic-stage.is-dimmed .scenic-tint {
+.scenic-stage.is-dimmed .scenic-tint {
   opacity: 0.85;
-  background-color: rgba(6, 12, 9, 0.6);
+  background-color: rgba(3, 7, 13, 0.6);
 }
 
 /* ========================================================
@@ -327,7 +388,7 @@ onBeforeUnmount(() => {
   background: linear-gradient(135deg, rgba(250, 250, 247, 0.42) 0%, rgba(242, 245, 242, 0.22) 100%);
   border-color: rgba(180, 130, 60, 0.20);
   box-shadow: 
-    0 16px 40px -10px rgba(45, 106, 79, 0.12),
+    0 16px 40px -10px rgba(59, 130, 246, 0.12),
     inset 0 1px 1px rgba(255, 255, 255, 0.65);
 }
 
@@ -380,7 +441,7 @@ onBeforeUnmount(() => {
 :root[data-theme='light'] .alpine-plaque-card:hover {
   background: linear-gradient(135deg, rgba(250, 250, 247, 0.55) 0%, rgba(242, 245, 242, 0.35) 100%);
   box-shadow: 
-    0 20px 48px -8px rgba(45, 106, 79, 0.18),
+    0 20px 48px -8px rgba(59, 130, 246, 0.18),
     inset 0 1px 1px rgba(255, 255, 255, 0.8),
     0 0 16px rgba(180, 130, 60, 0.15);
 }

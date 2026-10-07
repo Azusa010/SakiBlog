@@ -267,7 +267,6 @@ async function handleCommand(raw: string) {
           tag: '[welcome]',
           tagType: 'motto',
           lines: [
-            '“在文字中，遇见更大的世界。”',
             'In words, meet a bigger world.',
             ' - SakiBlog 禅意终端 v2.0',
           ],
@@ -687,7 +686,7 @@ onBeforeUnmount(() => {
                 <span class="tag tag-author">[author]</span>
                 <span class="text">
                   <strong>Saki</strong> · Full-Stack &amp; Creative Engineering
-                  <span class="bio-inline">· 在文字与代码中，遇见更大的世界。</span>
+                  <span class="bio-inline">· In words, meet a bigger world.</span>
                 </span>
               </div>
 
@@ -826,10 +825,10 @@ onBeforeUnmount(() => {
   background: rgba(10, 22, 17, 0.08); /* 92% 透明度 */
   backdrop-filter: blur(3px) saturate(125%); /* blur 降低到 3px (< 4px) */
   -webkit-backdrop-filter: blur(3px) saturate(125%);
-  border: 1px solid rgba(116, 198, 157, 0.26);
+  border: 1px solid rgba(147, 197, 253, 0.26);
   box-shadow:
     0 24px 64px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(116, 198, 157, 0.12),
+    0 0 0 1px rgba(147, 197, 253, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   border-radius: 18px;
   overflow: hidden;
@@ -839,10 +838,10 @@ onBeforeUnmount(() => {
 
 :root[data-theme='light'] .terminal-chassis {
   background: rgba(246, 250, 247, 0.08);
-  border-color: rgba(45, 106, 79, 0.2);
+  border-color: rgba(59, 130, 246, 0.2);
   box-shadow:
     0 24px 64px rgba(18, 26, 40, 0.15),
-    0 0 0 1px rgba(45, 106, 79, 0.08),
+    0 0 0 1px rgba(59, 130, 246, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
 }
@@ -854,13 +853,13 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   padding: 13px 20px;
   background: rgba(9, 17, 13, 0.12);
-  border-bottom: 1px solid rgba(116, 198, 157, 0.15);
+  border-bottom: 1px solid rgba(147, 197, 253, 0.15);
   user-select: none;
 }
 
 :root[data-theme='light'] .terminal-bar {
   background: rgba(235, 242, 237, 0.15);
-  border-bottom-color: rgba(45, 106, 79, 0.12);
+  border-bottom-color: rgba(59, 130, 246, 0.12);
 }
 
 .traffic-lights {
@@ -912,9 +911,9 @@ onBeforeUnmount(() => {
 .window-status {
   font-size: 0.68rem;
   letter-spacing: 0.1em;
-  color: #a3be8c;
-  background: rgba(163, 190, 140, 0.12);
-  border: 1px solid rgba(163, 190, 140, 0.25);
+  color: #93c5fd;
+  background: rgba(147, 197, 253, 0.12);
+  border: 1px solid rgba(147, 197, 253, 0.25);
   padding: 2px 8px;
   border-radius: 9999px;
 }
@@ -990,11 +989,11 @@ onBeforeUnmount(() => {
 }
 
 .tag-info {
-  color: #a3be8c; /* 竹青 Moss Green */
+  color: #94a3b8; /* Slate-400 */
 }
 
 .tag-motto {
-  color: #74c69d; /* 高地苍翠 Highland Emerald */
+  color: #93c5fd; /* Blue-300 */
 }
 
 .tag-author {
@@ -1070,12 +1069,12 @@ onBeforeUnmount(() => {
 }
 
 .prompt-arrow {
-  color: #88c0d0; /* 箭号 Cyan */
+  color: #60a5fa; /* Blue-400 */
   font-weight: 600;
 }
 
 .prompt-dir {
-  color: #a3be8c; /* 路径 Moss Green */
+  color: #94a3b8; /* Slate-400 */
 }
 
 .prompt-cmd {
@@ -1202,8 +1201,8 @@ onBeforeUnmount(() => {
 }
 
 .cli-input-row:focus-within {
-  border-color: rgba(163, 190, 140, 0.45);
-  box-shadow: 0 0 0 2px rgba(163, 190, 140, 0.12);
+  border-color: rgba(147, 197, 253, 0.45);
+  box-shadow: 0 0 0 2px rgba(147, 197, 253, 0.12);
 }
 
 :root[data-theme='light'] .cli-input-row {

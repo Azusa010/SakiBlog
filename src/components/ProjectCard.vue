@@ -218,8 +218,8 @@ function handleDemoClick(event: MouseEvent) {
 }
 
 .status-badge[data-status='active'] .status-dot {
-  background: #a3be8c;
-  box-shadow: 0 0 8px #a3be8c;
+  background: #94a3b8;
+  box-shadow: 0 0 8px #94a3b8;
 }
 
 .status-badge[data-status='completed'] .status-dot {

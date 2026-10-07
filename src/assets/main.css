@@ -10,30 +10,30 @@
 :root {
   color-scheme: dark;
 
-  /* 苏格兰天空岛高地苍翠 × 极客禅意终端 (深色基底 - 核心模式) */
-  --color-bg: #0c1612;
-  --color-bg-secondary: #112019;
-  --color-surface: rgba(16, 30, 23, 0.75);
-  --color-surface-hover: rgba(22, 42, 32, 0.88);
-  --color-surface-solid: #13241b;
-  --color-border: rgba(116, 198, 157, 0.14);
-  --color-border-glow: rgba(82, 183, 136, 0.38);
+  /* 静谧暮夜深蓝 × 极客禅意终端 (Melancholic Blue / Midnight Slate) */
+  --color-bg: #03070d;
+  --color-bg-secondary: #081018;
+  --color-surface: rgba(15, 23, 42, 0.75);
+  --color-surface-hover: rgba(30, 41, 59, 0.88);
+  --color-surface-solid: #0f172a;
+  --color-border: rgba(147, 197, 253, 0.14);
+  --color-border-glow: rgba(147, 197, 253, 0.38);
 
-  --color-text: #e8f5ed;
-  --color-text-muted: #95ab9e;
-  --color-text-dim: #5c7467;
+  --color-text: #e2e8f0;
+  --color-text-muted: #94a3b8;
+  --color-text-dim: #64748b;
 
-  /* 绿色主色调 (Highland Emerald & Jade) */
-  --color-accent: #52b788;
-  --color-accent-high: #b7efc5;
-  --color-accent-ink: #06150e;
-  --color-accent-glow: rgba(82, 183, 136, 0.28);
-  --color-danger: #e06c75;
+  /* 幽蓝主色调 (Melancholic Blue & Frost) */
+  --color-accent: #93c5fd;
+  --color-accent-high: #bfdbfe;
+  --color-accent-ink: #03070d;
+  --color-accent-glow: rgba(147, 197, 253, 0.28);
+  --color-danger: #f87171;
 
-  /* 极客终端代码与状态高亮 (清透翡翠与云杉) */
-  --color-code-cyan: #74c69d;
-  --color-code-blue: #95d5b2;
-  --color-code-frost: #52b788;
+  /* 极客终端代码与状态高亮 (冰蓝与霜白) */
+  --color-code-cyan: #7dd3fc;
+  --color-code-blue: #93c5fd;
+  --color-code-frost: #38bdf8;
 
   /* 毛玻璃折射 */
   --backdrop-blur: blur(16px);
@@ -41,7 +41,8 @@
 
   /* 字体族规范 */
   --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', sans-serif;
-  --font-display: 'Cabinet Grotesk', var(--font-sans);
+  --font-display: 'Cormorant Garamond', serif;
+  --font-accent: 'EB Garamond', serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
   --font-serif: 'Cinzel', 'Playfair Display', 'Cormorant Garamond', 'Baskerville', 'Georgia', 'Times New Roman', serif;
   --font-serif-body: 'Cormorant Garamond', 'Baskerville', 'Georgia', 'Times New Roman', serif;
@@ -96,27 +97,27 @@
 :root[data-theme='light'] {
   color-scheme: light;
 
-  --color-bg: #f2f7f4;
-  --color-bg-secondary: #e3ede6;
+  --color-bg: #f8fafc;
+  --color-bg-secondary: #f1f5f9;
   --color-surface: rgba(255, 255, 255, 0.85);
   --color-surface-hover: rgba(255, 255, 255, 0.96);
   --color-surface-solid: #ffffff;
-  --color-border: rgba(45, 106, 79, 0.12);
-  --color-border-glow: rgba(45, 106, 79, 0.3);
+  --color-border: rgba(59, 130, 246, 0.12);
+  --color-border-glow: rgba(59, 130, 246, 0.3);
 
-  --color-text: #112a1f;
-  --color-text-muted: #426756;
-  --color-text-dim: #719383;
+  --color-text: #0f172a;
+  --color-text-muted: #334155;
+  --color-text-dim: #64748b;
 
-  --color-accent: #2d6a4f;
-  --color-accent-high: #1b4332;
+  --color-accent: #2563eb;
+  --color-accent-high: #1d4ed8;
   --color-accent-ink: #ffffff;
-  --color-accent-glow: rgba(45, 106, 79, 0.18);
-  --color-danger: #c53030;
+  --color-accent-glow: rgba(37, 99, 235, 0.18);
+  --color-danger: #dc2626;
 
-  --color-code-cyan: #2d6a4f;
-  --color-code-blue: #40916c;
-  --color-code-frost: #52b788;
+  --color-code-cyan: #0284c7;
+  --color-code-blue: #2563eb;
+  --color-code-frost: #3b82f6;
 }
 
 *,
@@ -135,9 +136,9 @@ body {
   margin: 0;
   background-color: var(--color-bg);
   background-image:
-    radial-gradient(ellipse 90% 50% at 50% -5%, rgba(82, 183, 136, 0.14), transparent 70%),
-    radial-gradient(circle 900px at 95% 35%, rgba(116, 198, 157, 0.07), transparent 60%),
-    radial-gradient(circle 800px at 5% 75%, rgba(82, 183, 136, 0.08), transparent 70%);
+    radial-gradient(ellipse 90% 50% at 50% -5%, rgba(96, 165, 250, 0.14), transparent 70%),
+    radial-gradient(circle 900px at 95% 35%, rgba(147, 197, 253, 0.07), transparent 60%),
+    radial-gradient(circle 800px at 5% 75%, rgba(96, 165, 250, 0.08), transparent 70%);
   background-attachment: fixed;
   color: var(--color-text);
   font-family: var(--font-sans);

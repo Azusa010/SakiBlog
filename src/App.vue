@@ -133,72 +133,31 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="layout">
-    <!-- 全屏高地全景画布底座 (GLOBAL FULLSCREEN SCENIC STAGE) -->
-    <FullscreenScenicStage />
+    <!-- 全屏高地全景画布底座 (GLOBAL FULLSCREEN SCENIC STAGE - 仅非首页/非作品页全局展示) -->
+    <FullscreenScenicStage v-if="!isHome && route.path !== '/projects'" />
 
-    <!-- Hallmark N5 悬浮毛玻璃胶囊导航 -->
-    <header
-      class="site-header"
-      :class="[{ 'is-scrolled': isScrolled }, { 'boot-hidden': !boot.done && isHome }]"
+    <!-- Editorial Minimal Navigation -->
+    <nav 
+      class="fixed top-0 left-0 w-full z-[100] px-8 md:px-16 py-8 flex justify-between items-center mix-blend-difference transition-all duration-700"
+      :class="{ 'opacity-0 -translate-y-4': !boot.done && isHome, 'opacity-100 translate-y-0': boot.done || !isHome }"
     >
-      <div class="nav-pill" role="region" aria-label="全站导航胶囊">
-        <RouterLink class="brand" to="/" aria-label="返回首页">
-          <svg class="brand-mark" viewBox="0 0 24 16" aria-hidden="true">
-            <path d="M1 15 L9 3 L13 9 L16 5 L23 15 Z" fill="currentColor" />
-          </svg>
-          <span class="brand-name">SAKIBLOG</span>
-        </RouterLink>
-
-        <span class="pill-divider" aria-hidden="true"></span>
-
-        <nav class="site-nav" aria-label="主导航">
-          <RouterLink to="/">首页</RouterLink>
-          <RouterLink to="/projects">作品</RouterLink>
-          <RouterLink to="/posts">文章</RouterLink>
-          <RouterLink to="/categories">分类</RouterLink>
-          <RouterLink to="/about">关于</RouterLink>
-        </nav>
-
-        <span class="pill-divider" aria-hidden="true"></span>
-
-        <div class="pill-actions">
-          <form class="search-form" role="search" @submit.prevent="submitSearch">
-            <input
-              v-model="searchQuery"
-              type="search"
-              name="q"
-              placeholder="SEARCH"
-              aria-label="搜索文章"
-            />
-            <button type="submit" aria-label="提交搜索">
-              <svg class="search-icon" viewBox="0 0 16 16" aria-hidden="true">
-                <circle cx="6.5" cy="6.5" r="4.5" fill="none" stroke="currentColor" stroke-width="1.4" />
-                <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-              </svg>
-            </button>
-          </form>
-
-          <button
-            type="button"
-            class="theme-toggle"
-            :aria-label="theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
-            @click="toggleTheme($event)"
-          >
-            {{ theme === 'dark' ? '☀' : '☾' }}
-          </button>
-
-          <button
-            type="button"
-            class="terminal-toggle"
-            aria-label="打开禅意交互终端 (Ctrl+K)"
-            title="打开交互终端 (Ctrl+K / ~)"
-            @click="terminal.toggle()"
-          >
-            <span class="terminal-kbd-icon" aria-hidden="true">&gt;_</span>
-          </button>
-        </div>
+      <RouterLink to="/" class="text-lg tracking-widest uppercase text-slate-300 font-accent hover:text-white transition-colors">Saki</RouterLink>
+      
+      <div class="flex items-center gap-6 md:gap-8 text-xs md:text-sm tracking-widest uppercase text-slate-400">
+        <RouterLink to="/" class="nav-link relative overflow-hidden cursor-pointer transition-colors duration-400 hover:text-white" active-class="active text-white">Home</RouterLink>
+        <RouterLink to="/projects" class="nav-link relative overflow-hidden cursor-pointer transition-colors duration-400 hover:text-white" active-class="active text-white">Works</RouterLink>
+        <RouterLink to="/posts" class="nav-link relative overflow-hidden cursor-pointer transition-colors duration-400 hover:text-white" active-class="active text-white">Notes</RouterLink>
+        <RouterLink to="/about" class="nav-link relative overflow-hidden cursor-pointer transition-colors duration-400 hover:text-white" active-class="active text-white">About</RouterLink>
+        
+        <!-- Terminal & Theme Actions in minimal style -->
+        <button type="button" class="hover:text-blue-300 transition-colors" @click="toggleTheme($event)" aria-label="Toggle Theme">
+          {{ theme === 'dark' ? '☀' : '☾' }}
+        </button>
+        <button type="button" class="hover:text-blue-300 transition-colors font-mono" @click="terminal.toggle()" aria-label="Toggle Terminal">
+          &gt;_
+        </button>
       </div>
-    </header>
+    </nav>
 
     <main class="site-main" :class="{ 'is-home': isHome }">
       <!-- 缓存文章列表页, 返回时保留筛选/分页/滚动状态(FR-LIST-006) -->
@@ -225,7 +184,6 @@ onBeforeUnmount(() => {
           <span class="status-dot" aria-hidden="true"></span>
           <span class="status-label">SYS·ONLINE · SAKIBLOG WORKSPACE [CLI &gt;_]</span>
         </div>
-        <p class="footer-tagline">在文字中，遇见更大的世界。</p>
         <div class="footer-aside">
           <span class="footer-copy">© 2026 SAKIBLOG · ZEN TERMINAL</span>
         </div>
@@ -250,6 +208,31 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+}
+
+/* Minimal Editorial Nav Link Styles */
+.nav-link {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: color 0.4s ease;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0%;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.nav-link:hover::after,
+.nav-link.active::after {
+  width: 100%;
+}
+.nav-link.active {
+  color: #fff;
 }
 
 /* N5 悬浮毛玻璃胶囊导航 */
@@ -485,7 +468,7 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 1;
   margin-top: auto;
-  border-top: 1px solid rgba(116, 198, 157, 0.14);
+  border-top: 1px solid rgba(147, 197, 253, 0.14);
   background: rgba(10, 20, 15, 0.72);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -497,7 +480,7 @@ onBeforeUnmount(() => {
 }
 
 :root[data-theme='light'] .site-footer {
-  border-top-color: rgba(45, 106, 79, 0.14);
+  border-top-color: rgba(59, 130, 246, 0.14);
   background: rgba(242, 247, 244, 0.78);
 }
 

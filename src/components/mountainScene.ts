@@ -71,9 +71,9 @@ const FRAGMENT = /* glsl */ `
     float alpha = smoothstep(0.5, 0.06, d) * vFade * (0.32 + 0.22 * vTwinkle);
     if (alpha < 0.01) discard;
 
-    // 柔和空灵的翡翠玉露星芒 (与高地苍翠对齐)
-    vec3 emerald = mix(vec3(0.35, 0.76, 0.54), vec3(0.78, 0.96, 0.85), smoothstep(0.5, 0.0, d));
-    gl_FragColor = vec4(emerald, alpha);
+    // 柔和幽蓝与灰调霜芒 (Melancholic Blue/Gray & Frost)
+    vec3 blueMist = mix(vec3(0.42, 0.58, 0.78), vec3(0.75, 0.86, 0.98), smoothstep(0.5, 0.0, d));
+    gl_FragColor = vec4(blueMist, alpha);
   }
 `
 
@@ -187,8 +187,8 @@ export function createMountain(THREE: THREE, mount: HTMLElement): () => void {
   const onPointerLeave = () => {
     uniforms.uMouse.value.set(9999, 9999)
   }
-  mount.addEventListener('pointermove', onPointerMove, { passive: true })
-  mount.addEventListener('pointerleave', onPointerLeave)
+  window.addEventListener('pointermove', onPointerMove, { passive: true })
+  window.addEventListener('pointerleave', onPointerLeave)
 
   // 滚动散场: hero 滚出视口的过程中 0 → 1
   function dissolveFromScroll() {
@@ -219,8 +219,8 @@ export function createMountain(THREE: THREE, mount: HTMLElement): () => void {
     cancelAnimationFrame(rafId)
     resizeObserver.disconnect()
     window.removeEventListener('scroll', dissolveFromScroll)
-    mount.removeEventListener('pointermove', onPointerMove)
-    mount.removeEventListener('pointerleave', onPointerLeave)
+    window.removeEventListener('pointermove', onPointerMove)
+    window.removeEventListener('pointerleave', onPointerLeave)
     geometry.dispose()
     material.dispose()
     renderer.dispose()

@@ -68,5 +68,6 @@ onBeforeUnmount(() => {
   width: 100% !important;
   height: 100% !important;
   display: block;
+  filter: grayscale(25%) contrast(110%) brightness(90%) hue-rotate(185deg);
 }
 </style>

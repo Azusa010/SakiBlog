@@ -48,10 +48,14 @@ SakiBlog 不仅是一个博客，更是**独立全栈工程师与创意开发者
 ## 设计体系决议 (Design System Decisions)
 
 目前正在通过 `/grill-me` 流程确立首页及其他页面的重新设计方向（Peaceful scenery + 复古蓝调阴沉滤镜）：
-1. **页面范围**: 博客首页 (包含首屏视觉区、文章列表、分类等) - 已确认
-2. **首屏布局 (Hero Section)**: Editorial (杂志/社论风) 不对称网格排版 - 已确认
-3. **字体与排版 (Typography)**: Elegant Serif (优雅衬线体主导，如 Playfair Display/EB Garamond + Geist) - 已确认
-4. **动画与微交互 (Motion Intensity)**: Gentle Cinematic (缓出淡入，背景微弱循环平移，优雅的过渡) - 已确认
-5. **作品集布局 (Portfolio)**: Vertical Immersive (垂直沉浸大标题列表，背景图随悬浮/滚动出现) - 已确认
+1. **页面范围**: 全局 (Home, Portfolio, About, Blog)
+2. **首屏布局 (Hero Section)**: Editorial (杂志/社论风) 不对称网格排版
+3. **字体与排版 (Typography)**: Elegant Serif (优雅衬线体主导，如 Playfair Display/EB Garamond + Geist)
+4. **动画与微交互 (Motion)**: Gentle Cinematic (缓出淡入，背景微弱循环平移，优雅的过渡)
+5. **作品集布局 (Portfolio)**: Vertical Immersive (垂直沉浸大标题列表，背景图随悬浮/滚动出现)
+6. **个人档案布局 (About)**: Postcard/Letter (明信片信笺式居中单栏，高密度排版，文学感)
+7. **文章列表布局 (Blog)**: Editorial Split (社论分栏，左侧日期/右侧标题摘要)
 
-基础视觉与交互框架已达成共识。下一步：继续确立 About 与 Blog 页面的细节，然后输出完整的 Demo。
+### 前端重构融合策略 (Refactoring Strategy)
+- **样式架构**: 引入 Tailwind CSS 进行渐进式重构。新页面直接使用 Tailwind 类名落地 Demo 设计；旧组件（如后台界面）暂时保留原有原生 CSS 变量体系，后续平滑过渡。
+- **核心资产融合**: 保留原有的 Three.js WebGL 场景与全局终端（Zen Terminal）。将原有代码库中的“赛博绿色调” Shader 和终端毛玻璃替换为深沉复古蓝调，通过添加 CSS 滤镜或调整渲染颜色，让动态山峦与终端完美融入“古典忧郁”的氛围中。

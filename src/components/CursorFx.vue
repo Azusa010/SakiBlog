@@ -355,7 +355,7 @@ onBeforeUnmount(() => {
   opacity: 0;
   will-change: transform, width, height, box-shadow;
   pointer-events: none;
-  box-shadow: 0 0 10px rgba(116, 198, 157, 0.85);
+  box-shadow: 0 0 10px rgba(147, 197, 253, 0.85);
   box-sizing: border-box;
   transition:
     opacity var(--dur-fast) ease,
@@ -369,10 +369,10 @@ onBeforeUnmount(() => {
 .cursor-dot.is-magnetic {
   width: 6.5px;
   height: 6.5px;
-  background: #a7f3d0;
+  background: #bfdbfe;
   box-shadow:
-    0 0 12px #52b788,
-    0 0 22px rgba(116, 198, 157, 0.95);
+    0 0 12px #60a5fa,
+    0 0 22px rgba(147, 197, 253, 0.95);
 }
 
 .cursor-ring {
@@ -382,8 +382,8 @@ onBeforeUnmount(() => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1.5px solid rgba(116, 198, 157, 0.45);
-  background: radial-gradient(circle, rgba(82, 183, 136, 0.12) 0%, transparent 70%);
+  border: 1.5px solid rgba(147, 197, 253, 0.45);
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.12) 0%, transparent 70%);
   opacity: 0;
   will-change: transform, width, height, border-radius;
   pointer-events: none;
@@ -401,11 +401,11 @@ onBeforeUnmount(() => {
 
 /* 磁吸状态 (紧凑型按钮、胶囊、药丸、图标吸附包裹) */
 .cursor-ring.is-magnetic {
-  border-color: rgba(116, 198, 157, 0.85);
-  background: rgba(82, 183, 136, 0.16);
+  border-color: rgba(147, 197, 253, 0.85);
+  background: rgba(96, 165, 250, 0.16);
   box-shadow:
-    0 0 20px rgba(82, 183, 136, 0.28),
-    inset 0 0 10px rgba(116, 198, 157, 0.15);
+    0 0 20px rgba(96, 165, 250, 0.28),
+    inset 0 0 10px rgba(147, 197, 253, 0.15);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
 }
@@ -413,7 +413,7 @@ onBeforeUnmount(() => {
 /* 大尺寸条目悬浮 (如精选作品流、文章行) */
 .cursor-ring.is-large {
   border-color: var(--color-accent-high);
-  background: radial-gradient(circle, rgba(82, 183, 136, 0.22) 0%, transparent 75%);
-  box-shadow: 0 0 28px rgba(82, 183, 136, 0.3);
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.22) 0%, transparent 75%);
+  box-shadow: 0 0 28px rgba(96, 165, 250, 0.3);
 }
 </style>
