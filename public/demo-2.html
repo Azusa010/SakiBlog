@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horizontal Pan Card Styles</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <style>
+    body { background-color: #03070d; color: #e2e8f0; font-family: sans-serif; overflow-x: hidden; }
+    .demo-title { padding: 2rem; font-size: 2rem; color: #60a5fa; }
+    
+    .pan-container { overflow: hidden; width: 100%; height: 100vh; position: relative; border-bottom: 1px solid #1e293b; }
+    .pan-track { display: flex; width: 400vw; height: 100%; align-items: center; padding-left: 5vw; }
+    .pan-panel { width: 80vw; height: 70vh; margin-right: 5vw; flex-shrink: 0; display: flex; position: relative; border-radius: 0.5rem; overflow: hidden; }
+    
+    /* Style 1: Minimalist Typography */
+    .style-1 { background: #0a0f1a; border: 1px solid #1e293b; flex-direction: column; justify-content: center; padding: 4rem; }
+    .style-1 .eyebrow { font-family: monospace; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; color: #64748b; margin-bottom: 1rem; }
+    .style-1 h3 { font-size: 4rem; line-height: 1; margin-bottom: 1.5rem; font-family: serif; }
+    .style-1 p { font-size: 1.25rem; color: #94a3b8; max-width: 600px; }
+    
+    /* Style 2: Image-heavy (Photography) */
+    .style-2 { background: #000; }
+    .style-2 img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; filter: grayscale(50%); transition: transform 0.5s, opacity 0.5s; }
+    .style-2:hover img { transform: scale(1.05); opacity: 0.8; }
+    .style-2 .content { position: relative; z-index: 10; display: flex; flex-direction: column; justify-content: flex-end; padding: 3rem; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
+    .style-2 h3 { font-size: 3.5rem; margin-bottom: 1rem; }
+    
+    /* Style 3: Glassmorphism */
+    .style-3-wrapper { background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop') center/cover; }
+    .style-3 { background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); box-shadow: inset 0 1px 0 rgba(255,255,255,0.1); display: flex; flex-direction: column; justify-content: space-between; padding: 3rem; }
+    .style-3 h3 { font-size: 3rem; font-weight: 300; }
+  </style>
+</head>
+<body>
+
+  <h1 class="demo-title text-center" style="margin-top: 2rem;">Scroll down to see the 3 card styles in the Horizontal Pan</h1>
+
+  <section class="pan-container style-3-wrapper" id="horizontal-section">
+    <div class="pan-track">
+      
+      <!-- Style 1 -->
+      <div class="pan-panel style-1">
+        <div class="eyebrow">Style 1 • Minimal Typography</div>
+        <h3>The Architecture<br>of the Web.</h3>
+        <p>A focus on clean lines, strong typographic hierarchy, and negative space. Best for a manifesto or text-heavy featured content.</p>
+      </div>
+      
+      <!-- Style 2 -->
+      <div class="pan-panel style-2">
+        <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2000&auto=format&fit=crop" alt="Architecture">
+        <div class="content">
+          <div class="text-blue-400 font-mono text-sm uppercase tracking-widest mb-4">Style 2 • Photography Led</div>
+          <h3>Visual Depth</h3>
+          <p class="text-slate-300 max-w-lg text-lg">Immersive imagery with dramatic overlays and hover effects. Best for showcasing projects or visual art.</p>
+        </div>
+      </div>
+      
+      <!-- Style 3 -->
+      <div class="pan-panel style-3">
+        <div>
+          <div class="text-emerald-400 font-mono text-sm uppercase tracking-widest mb-4">Style 3 • Glassmorphism</div>
+          <h3>Liquid Glass</h3>
+        </div>
+        <p class="text-slate-200 max-w-lg text-xl leading-relaxed">Frosted glass effects using backdrop-blur over a textured or photographic background. Premium, modern, layered.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <div style="height: 100vh; display: flex; justify-content: center; align-items: center; text-align: center;">
+    <p class="text-slate-500">End of demo. Note the different aesthetics.</p>
+  </div>
+
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    const track = document.querySelector(".pan-track");
+    gsap.to(track, {
+      x: () => -(track.scrollWidth - window.innerWidth) + "px",
+      ease: "none",
+      scrollTrigger: {
+        trigger: "#horizontal-section",
+        start: "top top",
+        end: () => "+=" + (track.scrollWidth - window.innerWidth),
+        pin: true,
+        scrub: 1,
+        invalidateOnRefresh: true
+      }
+    });
+  </script>
+</body>
+</html>

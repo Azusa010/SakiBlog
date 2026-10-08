@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Behavior in Horizontal Pan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <style>
+    body { background-color: #03070d; color: #e2e8f0; font-family: sans-serif; overflow-x: hidden; }
+    .demo-title { padding: 2rem; font-size: 2rem; color: #60a5fa; text-align: center; }
+    
+    .pan-container { overflow: hidden; width: 100%; height: 100vh; position: relative; border-bottom: 1px solid #1e293b; }
+    .pan-track { display: flex; width: 400vw; height: 100%; align-items: center; padding-left: 10vw; }
+    .pan-panel { width: 70vw; height: 60vh; margin-right: 10vw; flex-shrink: 0; position: relative; border-radius: 1rem; overflow: hidden; background: #0f172a; border: 1px solid #334155; }
+    
+    .pan-panel video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; filter: grayscale(50%); transition: opacity 0.5s, filter 0.5s; }
+    
+    .content-overlay { position: relative; z-index: 10; padding: 3rem; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; background: linear-gradient(to top, rgba(3,7,13,1) 0%, rgba(3,7,13,0) 60%); pointer-events: none; }
+    
+    h3 { font-size: 3rem; margin-bottom: 0.5rem; font-family: serif; }
+    p { font-size: 1.2rem; color: #cbd5e1; }
+    .badge { font-family: monospace; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; margin-bottom: 1rem; display: inline-block; padding: 0.25rem 0.75rem; background: rgba(255,255,255,0.1); border-radius: 999px; }
+
+    /* Hover effect specifically for Option 2 */
+    .hover-video-container video { opacity: 0.3; filter: grayscale(100%); }
+    .hover-video-container:hover video { opacity: 1; filter: grayscale(0%); }
+  </style>
+</head>
+<body>
+
+  <h1 class="demo-title">Scroll down to see the 3 video behaviors</h1>
+  <p class="text-center text-slate-400 mb-8">We are using a sample Big Buck Bunny video for the demo.</p>
+
+  <section class="pan-container" id="horizontal-section">
+    <div class="pan-track">
+      
+      <!-- Behavior 1: Autoplay Loop -->
+      <div class="pan-panel">
+        <video src="https://www.w3schools.com/html/mov_bbb.mp4" autoplay loop muted playsinline></video>
+        <div class="content-overlay">
+          <span class="badge">Behavior 1</span>
+          <h3>Always Autoplay</h3>
+          <p>The video loops continuously in the background, providing constant motion. Simple and visually rich.</p>
+        </div>
+      </div>
+      
+      <!-- Behavior 2: Play on Hover -->
+      <div class="pan-panel hover-video-container">
+        <!-- We use JS to play/pause on hover for this one -->
+        <video class="hover-video" src="https://www.w3schools.com/html/mov_bbb.mp4" loop muted playsinline></video>
+        <div class="content-overlay">
+          <span class="badge">Behavior 2</span>
+          <h3>Play on Hover</h3>
+          <p>The video is paused and dimmed until the user hovers their mouse over the card, creating an interactive reveal.</p>
+        </div>
+      </div>
+      
+      <!-- Behavior 3: Play when Centered -->
+      <div class="pan-panel center-video-container">
+        <!-- We use ScrollTrigger to play/pause this one -->
+        <video class="center-video" src="https://www.w3schools.com/html/mov_bbb.mp4" loop muted playsinline></video>
+        <div class="content-overlay">
+          <span class="badge">Behavior 3</span>
+          <h3>Play when Centered</h3>
+          <p>The video pauses when off-screen and only plays when the card enters the center of the viewport during the scroll.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div style="height: 100vh; display: flex; justify-content: center; align-items: center; text-align: center;">
+    <p class="text-slate-500">End of demo.</p>
+  </div>
+
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Horizontal pan animation
+    const track = document.querySelector(".pan-track");
+    const panTween = gsap.to(track, {
+      x: () => -(track.scrollWidth - window.innerWidth) + "px",
+      ease: "none",
+      scrollTrigger: {
+        trigger: "#horizontal-section",
+        start: "top top",
+        end: () => "+=" + (track.scrollWidth - window.innerWidth),
+        pin: true,
+        scrub: 1,
+        invalidateOnRefresh: true
+      }
+    });
+
+    // Behavior 2 logic: Play on Hover
+    const hoverContainer = document.querySelector('.hover-video-container');
+    const hoverVideo = document.querySelector('.hover-video');
+    hoverContainer.addEventListener('mouseenter', () => hoverVideo.play());
+    hoverContainer.addEventListener('mouseleave', () => hoverVideo.pause());
+
+    // Behavior 3 logic: Play when Centered
+    const centerPanel = document.querySelector('.center-video-container');
+    const centerVideo = document.querySelector('.center-video');
+    
+    // We create a separate ScrollTrigger to detect when this specific panel is centered
+    // Since it's inside a pinned container that moves horizontally, we use containerAnimation
+    ScrollTrigger.create({
+      trigger: centerPanel,
+      containerAnimation: panTween,
+      start: "left center", // when the left edge of the panel hits the center of the viewport
+      end: "right center",  // when the right edge of the panel hits the center of the viewport
+      onEnter: () => {
+        centerVideo.play();
+        gsap.to(centerVideo, {opacity: 1, filter: "grayscale(0%)", duration: 0.5});
+      },
+      onLeave: () => {
+        centerVideo.pause();
+        gsap.to(centerVideo, {opacity: 0.6, filter: "grayscale(50%)", duration: 0.5});
+      },
+      onEnterBack: () => {
+        centerVideo.play();
+        gsap.to(centerVideo, {opacity: 1, filter: "grayscale(0%)", duration: 0.5});
+      },
+      onLeaveBack: () => {
+        centerVideo.pause();
+        gsap.to(centerVideo, {opacity: 0.6, filter: "grayscale(50%)", duration: 0.5});
+      }
+    });
+
+  </script>
+</body>
+</html>

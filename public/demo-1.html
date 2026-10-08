@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home Page Extension Options</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <style>
+    body { background-color: #03070d; color: #e2e8f0; font-family: sans-serif; }
+    .demo-section { min-height: 100vh; padding: 4rem 2rem; border-bottom: 1px solid #1e293b; }
+    .demo-title { font-size: 2rem; margin-bottom: 2rem; color: #60a5fa; }
+    
+    /* Option A: Bento */
+    .bento-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .bento-item { background: #0f172a; border-radius: 0.5rem; padding: 2rem; min-height: 200px; opacity: 0; transform: translateY(30px); }
+    .bento-item.large { grid-column: span 2; grid-row: span 2; }
+    
+    /* Option B: Horizontal Pan */
+    .pan-container { overflow: hidden; width: 100%; height: 100vh; position: relative; }
+    .pan-track { display: flex; width: 300vw; height: 100%; align-items: center; }
+    .pan-panel { width: 100vw; height: 80vh; padding: 2rem; flex-shrink: 0; display: flex; justify-content: center; align-items: center; font-size: 3rem; background: #0f172a; margin-right: 2rem; border-radius: 1rem; }
+    
+    /* Option C: Sticky Stack */
+    .stack-container { position: relative; }
+    .stack-card { position: sticky; top: 0; height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .stack-card-inner { width: 80%; height: 60vh; background: #1e293b; border-radius: 1rem; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 0 -10px 30px rgba(0,0,0,0.5); }
+    .c1 { background: #0f172a; }
+    .c2 { background: #1e293b; }
+    .c3 { background: #334155; }
+  </style>
+</head>
+<body>
+
+  <div style="height: 50vh; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+    <h1 class="text-4xl">Scroll down to see the options for the next section</h1>
+    <p class="text-slate-400 mt-4">These represent different GSAP patterns we could add below your hero.</p>
+  </div>
+
+  <!-- Option A -->
+  <section class="demo-section" id="option-a">
+    <h2 class="demo-title">Option A: Bento Grid (gsap.from stagger)</h2>
+    <div class="bento-grid">
+      <div class="bento-item large">Main Feature</div>
+      <div class="bento-item">Side 1</div>
+      <div class="bento-item">Side 2</div>
+      <div class="bento-item">Side 3</div>
+      <div class="bento-item">Side 4</div>
+    </div>
+  </section>
+
+  <!-- Option B -->
+  <section class="demo-section pan-container" id="option-b">
+    <h2 class="demo-title" style="position: absolute; top: 2rem; left: 2rem; z-index: 10;">Option B: Horizontal Pan (ScrollTrigger)</h2>
+    <div class="pan-track">
+      <div class="pan-panel">Horizontal Item 1</div>
+      <div class="pan-panel">Horizontal Item 2</div>
+      <div class="pan-panel">Horizontal Item 3</div>
+    </div>
+  </section>
+
+  <!-- Option C -->
+  <section class="demo-section" id="option-c" style="padding:0; border:none;">
+    <h2 class="demo-title" style="position: absolute; z-index: 10; margin: 2rem;">Option C: Sticky Stack (ScrollTrigger)</h2>
+    <div class="stack-container">
+      <div class="stack-card"><div class="stack-card-inner c1">Stack Card 1</div></div>
+      <div class="stack-card"><div class="stack-card-inner c2">Stack Card 2</div></div>
+      <div class="stack-card"><div class="stack-card-inner c3">Stack Card 3</div></div>
+    </div>
+  </section>
+
+  <div style="height: 100vh;"></div>
+
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Option A: Bento reveal
+    gsap.to(".bento-item", {
+      scrollTrigger: {
+        trigger: "#option-a",
+        start: "top 70%",
+      },
+      y: 0,
+      opacity: 1,
+      duration: 0.8,
+      stagger: 0.1,
+      ease: "power2.out"
+    });
+
+    // Option B: Horizontal Pan
+    const track = document.querySelector(".pan-track");
+    gsap.to(track, {
+      x: () => -(track.scrollWidth - window.innerWidth) + "px",
+      ease: "none",
+      scrollTrigger: {
+        trigger: "#option-b",
+        start: "top top",
+        end: () => "+=" + (track.scrollWidth - window.innerWidth),
+        pin: true,
+        scrub: 1,
+        invalidateOnRefresh: true
+      }
+    });
+
+    // Option C: Sticky Stack
+    const cards = gsap.utils.toArray(".stack-card");
+    cards.forEach((card, i) => {
+      if (i === cards.length - 1) return;
+      const inner = card.querySelector(".stack-card-inner");
+      gsap.to(inner, {
+        scale: 0.9,
+        opacity: 0.5,
+        ease: "none",
+        scrollTrigger: {
+          trigger: cards[i + 1],
+          start: "top bottom",
+          end: "top top",
+          scrub: true,
+        }
+      });
+    });
+  </script>
+</body>
+</html>

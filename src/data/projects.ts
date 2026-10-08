@@ -17,6 +17,7 @@ export interface ProjectItem {
   statusLabel: string
   year: string
   coverImage?: string
+  videoUrl?: string
   demoUrl?: string
   githubUrl?: string
   articleUrl?: string
@@ -44,6 +45,7 @@ export const PROJECTS_DATA: ProjectItem[] = [
     status: 'active',
     statusLabel: '迭代中 · ACTIVE',
     year: '2026',
+    videoUrl: '/videos/12160567-hd_1280_720_25fps.mp4',
     demoUrl: '/',
     githubUrl: 'https://github.com/Azusa010/SakiBlog',
     articleUrl: '/posts',
@@ -65,6 +67,7 @@ export const PROJECTS_DATA: ProjectItem[] = [
     status: 'active',
     statusLabel: '研发中 · WIP',
     year: '2026',
+    videoUrl: '/videos/5437124-hd_1280_720_24fps.mp4',
     githubUrl: 'https://github.com/Azusa010/personal-agent',
     highlights: [
       'Local-first 本地优先架构设计',
@@ -84,6 +87,7 @@ export const PROJECTS_DATA: ProjectItem[] = [
     status: 'active',
     statusLabel: '运行中 · STABLE',
     year: '2026',
+    videoUrl: '/videos/7276307-hd_1280_720_18fps.mp4',
     githubUrl: 'https://github.com/Azusa010/SakiFlow',
     demoUrl: 'https://saki-flow.vercel.app',
     highlights: [
@@ -104,6 +108,7 @@ export const PROJECTS_DATA: ProjectItem[] = [
     status: 'active',
     statusLabel: '运行中 · STABLE',
     year: '2026',
+    videoUrl: '/videos/mixkit-gigantic-field-of-sunflowers-on-a-sunny-day-4881-hd-ready.mp4',
     githubUrl: 'https://github.com/Azusa010/SakiVault',
     demoUrl: 'https://saki-vault.vercel.app',
     highlights: [

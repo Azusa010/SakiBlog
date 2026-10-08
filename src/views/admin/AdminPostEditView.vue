@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue'
+
+import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
+
+
 import { RouterLink, useRoute } from 'vue-router'
 import {
   createAdminPost,
@@ -13,7 +16,7 @@ import AdminNavBar from '@/components/AdminNavBar.vue'
 import { renderMarkdown } from '@/markdown'
 
 import * as monaco from 'monaco-editor'
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker.js?worker'
+import editorWorker from 'monaco-editor/editor/editor.worker?worker'
 
 self.MonacoEnvironment = {
   getWorker() {
@@ -76,7 +79,10 @@ async function load() {
     }
     status.value = 'ready'
     
-    if (editorInstance.value) {
+    await nextTick()
+    if (!editorInstance.value && monacoContainer.value) {
+      initEditor()
+    } else if (editorInstance.value) {
       if (editorInstance.value.getValue() !== form.content) {
         editorInstance.value.setValue(form.content)
       }
@@ -199,7 +205,7 @@ monaco.languages.registerCompletionItemProvider('markdown', {
   }
 })
 
-onMounted(() => {
+function initEditor() {
   if (monacoContainer.value) {
     editorInstance.value = monaco.editor.create(monacoContainer.value, {
       value: form.content,
@@ -225,7 +231,7 @@ onMounted(() => {
       }
     })
   }
-})
+}
 
 watch(() => form.content, (newVal) => {
   if (editorInstance.value && editorInstance.value.getValue() !== newVal) {

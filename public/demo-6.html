@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>More Web Design Tech Demos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <style>
+    body { background-color: #03070d; color: #e2e8f0; font-family: sans-serif; overflow-x: hidden; margin: 0; }
+    .demo-title { padding: 4rem 2rem 1rem; font-size: 2.5rem; color: #60a5fa; text-align: center; border-top: 1px solid #1e293b; margin-top: 5rem; }
+    
+    .serif { font-family: 'Times New Roman', Times, serif; }
+
+    /* Interaction 1: Spotlight Hover Reveal */
+    .spotlight-section { height: 60vh; background: #000; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: none; }
+    .spotlight-text { font-size: 5rem; text-transform: uppercase; color: #1e293b; z-index: 1; text-align: center; }
+    .spotlight-overlay { position: absolute; inset: 0; background: #e2e8f0; color: #000; display: flex; align-items: center; justify-content: center; pointer-events: none; clip-path: circle(0px at center); z-index: 2; }
+    .spotlight-overlay span { font-size: 5rem; text-transform: uppercase; text-align: center; font-weight: bold; }
+
+    /* Interaction 2: 3D Perspective Scroll */
+    .perspective-section { height: 150vh; perspective: 1000px; background: #0a0f1a; }
+    .perspective-sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    .perspective-card { position: absolute; width: 60vw; height: 50vh; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; font-size: 3rem; transform: translateZ(-2000px); opacity: 0; }
+
+    /* Interaction 3: Parallax Stack */
+    .parallax-section { height: 150vh; background: #03070d; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+    .plx-el { position: absolute; background: #1e293b; border-radius: 1rem; padding: 2rem; border: 1px solid #334155; }
+    .plx-1 { width: 300px; height: 400px; left: 10%; z-index: 1; background: #0f172a; }
+    .plx-2 { width: 400px; height: 300px; right: 15%; top: 30%; z-index: 3; background: #1e293b; }
+    .plx-3 { width: 250px; height: 250px; left: 40%; top: 60%; z-index: 2; background: #334155; }
+
+  </style>
+</head>
+<body>
+
+  <div style="height: 50vh; display: flex; align-items: center; justify-content: center; text-align: center; flex-direction: column; padding: 2rem;">
+    <h1 class="text-4xl text-white">More Design Interactions</h1>
+    <p class="text-slate-400 mt-4 max-w-lg">We added the Kinetic Typography to your Home page! Here are 3 brand new interactions for the next section.</p>
+  </div>
+
+  <!-- Interaction 1: Spotlight Hover Reveal -->
+  <h2 class="demo-title">Interaction A: Spotlight Reveal (Move your mouse)</h2>
+  <section class="spotlight-section" id="interact-1">
+    <div class="spotlight-text serif">The Hidden Layer</div>
+    <div class="spotlight-overlay serif" id="spotlight">
+      <span>The Hidden Layer</span>
+    </div>
+  </section>
+
+  <!-- Interaction 2: 3D Perspective Scroll -->
+  <h2 class="demo-title">Interaction B: 3D Perspective Scroll</h2>
+  <section class="perspective-section" id="interact-2">
+    <div class="perspective-sticky">
+      <div class="perspective-card p-card-1">Z-Depth Layout</div>
+      <div class="perspective-card p-card-2">Spatial Design</div>
+      <div class="perspective-card p-card-3">WebGL Aesthetics</div>
+    </div>
+  </section>
+
+  <!-- Interaction 3: Parallax Stack -->
+  <h2 class="demo-title">Interaction C: Parallax Stack</h2>
+  <section class="parallax-section" id="interact-3">
+    <div class="plx-el plx-1" data-speed="0.2">Slow layer (Back)</div>
+    <div class="plx-el plx-2" data-speed="-0.3">Fast layer (Front)</div>
+    <div class="plx-el plx-3" data-speed="-0.1">Mid layer</div>
+    <div style="font-size: 5rem; z-index: 0; color: #334155;" class="serif">Scroll Depth</div>
+  </section>
+
+  <div style="height: 50vh;"></div>
+
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Interaction 1: Spotlight
+    const section1 = document.getElementById('interact-1');
+    const spotlight = document.getElementById('spotlight');
+    
+    section1.addEventListener('mousemove', (e) => {
+      const rect = section1.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      gsap.to(spotlight, {
+        clipPath: `circle(150px at ${x}px ${y}px)`,
+        duration: 0.2,
+        ease: 'power2.out'
+      });
+    });
+    section1.addEventListener('mouseleave', () => {
+      gsap.to(spotlight, { clipPath: `circle(0px at 50% 50%)`, duration: 0.5 });
+    });
+
+    // Interaction 2: 3D Perspective
+    const pCards = gsap.utils.toArray('.perspective-card');
+    const pTl = gsap.timeline({
+      scrollTrigger: {
+        trigger: '#interact-2',
+        start: 'top top',
+        end: '+=100%',
+        scrub: 1,
+        pin: true
+      }
+    });
+
+    pCards.forEach((card, i) => {
+      // Start far back and invisible
+      gsap.set(card, { z: -2000, opacity: 0 });
+      // Fly to front
+      pTl.to(card, { z: 0, opacity: 1, duration: 1 }, i * 0.5)
+         .to(card, { z: 500, opacity: 0, duration: 1 }, (i * 0.5) + 1);
+    });
+
+    // Interaction 3: Parallax
+    gsap.utils.toArray('.plx-el').forEach(el => {
+      const speed = parseFloat(el.getAttribute('data-speed'));
+      gsap.to(el, {
+        y: () => -(window.innerHeight * speed),
+        ease: 'none',
+        scrollTrigger: {
+          trigger: '#interact-3',
+          start: 'top bottom',
+          end: 'bottom top',
+          scrub: true
+        }
+      });
+    });
+  </script>
+</body>
+</html>

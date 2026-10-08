@@ -5,7 +5,6 @@ import { ApiError, fetchPost, type PostDetail as PostDetailData } from '@/api/po
 import { estimateReadingMinutes, renderMarkdown } from '@/markdown'
 import { scrollToElement } from '@/lib/smoothScroll'
 import { useCountUp } from '@/utils/countUp'
-import BackToTop from '@/components/BackToTop.vue'
 
 /**
  * 文章详情页(SRS FR-ARTICLE-001 ~ 008):
@@ -140,7 +139,6 @@ watch(() => route.params.id, load, { immediate: true })
               </ol>
             </nav>
 
-            <BackToTop />
           </div>
         </aside>
 

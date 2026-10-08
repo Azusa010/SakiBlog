@@ -10,6 +10,7 @@ import CursorFx from '@/components/CursorFx.vue'
 import FullscreenScenicStage from '@/components/FullscreenScenicStage.vue'
 import PlaneSprite from '@/components/PlaneSprite.vue'
 import ZenTerminalModal from '@/components/ZenTerminalModal.vue'
+import BackToTop from '@/components/BackToTop.vue'
 
 const terminal = useTerminalStore()
 const scenic = useScenicStore()
@@ -96,19 +97,6 @@ watch(
 
 let scrollListener: (() => void) | null = null
 
-function onGlobalDblClick(event: MouseEvent) {
-  const target = event.target as HTMLElement | null
-  if (!target) return
-  if (target.closest('input, textarea, select, button, a, pre, [contenteditable="true"]')) {
-    return
-  }
-  const selection = window.getSelection()?.toString().trim()
-  if (selection && selection.length > 0) {
-    return
-  }
-  terminal.open()
-}
-
 onMounted(() => {
   if (prefersReducedMotion()) {
     boot.finish()
@@ -118,11 +106,9 @@ onMounted(() => {
     isScrolled.value = window.scrollY > 40
   }
   window.addEventListener('scroll', checkScroll, { passive: true })
-  window.addEventListener('dblclick', onGlobalDblClick)
   checkScroll()
   scrollListener = () => {
     window.removeEventListener('scroll', checkScroll)
-    window.removeEventListener('dblclick', onGlobalDblClick)
   }
 })
 
@@ -184,8 +170,10 @@ onBeforeUnmount(() => {
           <span class="status-dot" aria-hidden="true"></span>
           <span class="status-label">SYS·ONLINE · SAKIBLOG WORKSPACE [CLI &gt;_]</span>
         </div>
-        <div class="footer-aside">
+        <div class="footer-aside" style="display: flex; gap: 1rem; align-items: center;">
           <span class="footer-copy">© 2026 SAKIBLOG · ZEN TERMINAL</span>
+          <span class="footer-copy" style="opacity: 0.6;">·</span>
+          <span class="footer-copy">Imagery via <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" style="text-decoration: underline; text-underline-offset: 2px;">Unsplash</a></span>
         </div>
       </div>
     </footer>
@@ -200,6 +188,7 @@ onBeforeUnmount(() => {
     <CursorFx />
 
     <ZenTerminalModal />
+    <BackToTop />
   </div>
 </template>
 

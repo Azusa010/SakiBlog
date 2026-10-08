@@ -54,28 +54,70 @@ function openUrl(url?: string) {
 }
 
 function initAnimations() {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+  if (typeof window === 'undefined') {
     return
   }
   ctx?.revert()
   ctx = gsap.context(() => {
     gsap.utils.toArray<HTMLElement>('.gs-reveal').forEach((elem) => {
-      ScrollTrigger.create({
-        trigger: elem,
-        start: 'top 85%',
-        onEnter: () => {
-          gsap.fromTo(
-            elem,
-            { y: 40, opacity: 0 },
-            { y: 0, opacity: 1, duration: 1.2, ease: 'power2.out', overwrite: 'auto' },
-          )
-        },
-        once: true,
-      })
+      // 1. Scrub fade-in + move up for the whole item
+      gsap.fromTo(
+        elem,
+        { y: 80, opacity: 0 },
+        { 
+          y: 0, 
+          opacity: 1, 
+          ease: 'none', 
+          scrollTrigger: {
+            trigger: elem,
+            start: 'top 95%',
+            end: 'top 50%',
+            scrub: 0.5
+          }
+        }
+      )
+      
+      // 2. Parallax for the text
+      const text = elem.querySelector('.parallax-text')
+      if (text) {
+        gsap.fromTo(
+          text,
+          { yPercent: -15 },
+          { 
+            yPercent: 15, 
+            ease: 'none', 
+            scrollTrigger: {
+              trigger: elem,
+              start: 'top bottom',
+              end: 'bottom top',
+              scrub: true
+            }
+          }
+        )
+      }
+
+      // 3. Parallax for the image
+      const img = elem.querySelector('.parallax-img')
+      if (img) {
+        gsap.fromTo(
+          img,
+          { yPercent: -10, scale: 1 },
+          { 
+            yPercent: 10, 
+            scale: 1.05, 
+            ease: 'none', 
+            scrollTrigger: {
+              trigger: elem,
+              start: 'top bottom',
+              end: 'bottom top',
+              scrub: true
+            }
+          }
+        )
+      }
     })
   }, portfolioEl.value ?? undefined)
 }
-
 onMounted(() => {
   initAnimations()
 })
@@ -101,9 +143,7 @@ onBeforeUnmount(() => {
         <h1 class="font-display text-5xl md:text-7xl lg:text-8xl text-slate-200">
           The Portfolio.
         </h1>
-        <p class="text-slate-400 text-base md:text-lg max-w-xl mt-4 leading-relaxed font-sans">
-          在全栈工程闭环与先锋界面美学之间雕琢的数字产物。垂直沉浸式展列，静待探索。
-        </p>
+        
 
         <!-- Category Filters -->
         <div class="flex flex-wrap gap-2.5 mt-8 md:mt-10" role="tablist" aria-label="作品分类筛选">
@@ -145,7 +185,7 @@ onBeforeUnmount(() => {
               <span>{{ String(index + 1).padStart(2, '0') }} — {{ project.category.toUpperCase() }}</span>
             </p>
 
-            <h2 class="font-display text-[12vw] md:text-[10vw] leading-[0.9] tracking-tight text-slate-200 port-title whitespace-nowrap">
+            <h2 class="font-display text-[12vw] md:text-[10vw] leading-[0.9] tracking-tight text-slate-200 port-title whitespace-nowrap parallax-text">
               {{ project.title }}
             </h2>
             
@@ -162,7 +202,7 @@ onBeforeUnmount(() => {
             <img
               :src="getProjectImage(project, index)"
               :alt="project.title"
-              class="port-img"
+              class="port-img parallax-img" style="height: 120%; width: 100%; object-fit: cover; position: absolute; top: -10%; left: 0;"
               loading="lazy"
             />
           </div>
@@ -236,15 +276,16 @@ onBeforeUnmount(() => {
 
 .port-img-wrap {
   position: absolute;
-  right: 6%;
-  top: 15%;
-  width: 40%;
-  height: 60%;
+  right: 5%;
+  top: 10%;
+  width: 48%;
+  height: 80%;
   overflow: hidden;
-  opacity: 0;
+  opacity: 1;
   transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
   pointer-events: none;
-  border-radius: 2px;
+  border-radius: 4px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
 .port-img-wrap-alt {
@@ -254,20 +295,13 @@ onBeforeUnmount(() => {
 
 @media (max-width: 767px) {
   .port-img-wrap {
-    width: 80%;
-    height: 60%;
-    right: 0;
-    top: 20%;
-    opacity: 0.08;
-  }
-  .port-img-wrap-alt {
-    left: auto;
-    right: 0;
+    display: none;
   }
 }
 
 .port-item:hover .port-img-wrap {
-  opacity: 0.85;
+  transform: scale(1.02) rotate(-1deg);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
 }
 
 .port-img {

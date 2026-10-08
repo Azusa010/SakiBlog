@@ -10,6 +10,7 @@ import {
   type PostSummary,
 } from '@/api/posts'
 import { useTerminalStore } from '@/stores/terminal'
+import { useAudioStore } from '@/stores/audio'
 import { currentTheme, saveTheme, type Theme } from '@/theme'
 import { PROJECTS_DATA } from '@/data/projects'
 
@@ -33,6 +34,7 @@ interface OutputBlock {
 }
 
 const terminal = useTerminalStore()
+const audioStore = useAudioStore()
 const router = useRouter()
 
 const inputQuery = ref('')
@@ -63,6 +65,7 @@ const COMMANDS = [
   'theme',
   'whoami',
   'clear',
+  'music',
   'exit',
 ]
 
@@ -126,12 +129,52 @@ async function handleCommand(raw: string) {
           '  skills              展示个人全栈技术栈与能力图谱',
           '  contact             获取开发者公开联络通道',
           '  theme [light|dark]  切换或查看当前界面主题 (light, dark, toggle)',
+          '  music [subcmd]      终端音乐播放器 (play, pause, next, prev, vol <0-100>)',
           '  whoami              打印当前终端访客权限与身份',
           '  clear               清空屏幕并重置回初始视窗',
           '  exit / quit         退出终端控制台 (快捷键: ESC)',
         ],
       })
       break
+
+    case 'music': {
+      const sub = args[0]?.toLowerCase()
+      if (sub === 'play') {
+        audioStore.play()
+        addBlock({ type: 'output', tag: '[music]', tagType: 'success', text: `▶️ 正在播放: ${audioStore.currentTrack.title}` })
+      } else if (sub === 'pause') {
+        audioStore.pause()
+        addBlock({ type: 'output', tag: '[music]', tagType: 'info', text: `⏸️ 已暂停: ${audioStore.currentTrack.title}` })
+      } else if (sub === 'next') {
+        audioStore.next()
+        addBlock({ type: 'output', tag: '[music]', tagType: 'success', text: `⏭️ 切歌: ${audioStore.currentTrack.title}` })
+      } else if (sub === 'prev') {
+        audioStore.prev()
+        addBlock({ type: 'output', tag: '[music]', tagType: 'success', text: `⏮️ 切歌: ${audioStore.currentTrack.title}` })
+      } else if (sub === 'vol' || sub === 'v') {
+        const val = parseInt(args[1])
+        if (!isNaN(val) && val >= 0 && val <= 100) {
+          audioStore.setVolume(val / 100)
+          addBlock({ type: 'output', tag: '[music]', tagType: 'info', text: `🔊 音量已设置为: ${val}%` })
+        } else {
+          addBlock({ type: 'output', tag: '[music]', tagType: 'info', text: `🔊 当前音量: ${Math.round(audioStore.volume * 100)}%` })
+        }
+      } else {
+        addBlock({
+          type: 'output',
+          tag: '[music]',
+          tagType: 'info',
+          lines: [
+            `🎵 当前状态: ${audioStore.isPlaying ? '播放中 ▶️' : '已暂停 ⏸️'}`,
+            `🎵 当前曲目: ${audioStore.currentTrack.title}`,
+            `🔊 当前音量: ${Math.round(audioStore.volume * 100)}%`,
+            '',
+            '支持的子命令: play, pause, next, prev, vol <0-100>'
+          ]
+        })
+      }
+      break
+    }
 
     case 'projects':
     case 'portfolio':
@@ -785,6 +828,25 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="footer-telemetry">
+            <!-- Mini Music Player -->
+            <div class="mini-music-player flex items-center gap-3 text-xs opacity-70 hover:opacity-100 transition-opacity mr-4">
+              <button @click.stop="audioStore.prev()" class="hover:text-accent transition-colors cursor-pointer" title="上一首">⏮</button>
+              <button @click.stop="audioStore.toggle()" class="hover:text-accent transition-colors cursor-pointer w-4 text-center" :title="audioStore.isPlaying ? '暂停' : '播放'">
+                {{ audioStore.isPlaying ? '⏸' : '▶' }}
+              </button>
+              <button @click.stop="audioStore.next()" class="hover:text-accent transition-colors cursor-pointer" title="下一首">⏭</button>
+              <span class="music-title truncate max-w-[100px] text-zinc-400 mx-2" :title="audioStore.currentTrack?.title">
+                {{ audioStore.currentTrack?.title || 'Unknown Track' }}
+              </span>
+              <input 
+                type="range" 
+                min="0" max="1" step="0.01" 
+                :value="audioStore.volume" 
+                @input="e => audioStore.setVolume(parseFloat((e.target as HTMLInputElement).value))"
+                class="vol-slider w-16 h-1 cursor-pointer"
+                title="音量调节"
+              />
+            </div>
             <span class="telemetry-item">UTF-8</span>
             <span class="telemetry-item">NORMAL</span>
             <button
@@ -816,15 +878,15 @@ onBeforeUnmount(() => {
   padding: max(1rem, 3vw);
 }
 
-/* 禅意终端底盘 (>90% 高通透水晶玻璃, blur 降低到 4px 以下) */
+/* 禅意终端底盘 */
 .terminal-chassis {
   width: min(52rem, 94vw);
   height: min(34rem, 80vh);
   display: flex;
   flex-direction: column;
-  background: rgba(10, 22, 17, 0.08); /* 92% 透明度 */
-  backdrop-filter: blur(3px) saturate(125%); /* blur 降低到 3px (< 4px) */
-  -webkit-backdrop-filter: blur(3px) saturate(125%);
+  background: rgba(10, 22, 17, 0.75); /* 降低透明度 (25% 透明度) */
+  backdrop-filter: blur(12px) saturate(125%);
+  -webkit-backdrop-filter: blur(12px) saturate(125%);
   border: 1px solid rgba(147, 197, 253, 0.26);
   box-shadow:
     0 24px 64px rgba(0, 0, 0, 0.45),
@@ -837,7 +899,7 @@ onBeforeUnmount(() => {
 }
 
 :root[data-theme='light'] .terminal-chassis {
-  background: rgba(246, 250, 247, 0.08);
+  background: rgba(246, 250, 247, 0.85); /* 降低透明度 (15% 透明度) */
   border-color: rgba(59, 130, 246, 0.2);
   box-shadow:
     0 24px 64px rgba(18, 26, 40, 0.15),
