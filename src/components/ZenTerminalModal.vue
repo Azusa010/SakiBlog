@@ -152,7 +152,7 @@ async function handleCommand(raw: string) {
         audioStore.prev()
         addBlock({ type: 'output', tag: '[music]', tagType: 'success', text: `⏮️ 切歌: ${audioStore.currentTrack.title}` })
       } else if (sub === 'vol' || sub === 'v') {
-        const val = parseInt(args[1])
+        const val = parseInt(args[1] || '')
         if (!isNaN(val) && val >= 0 && val <= 100) {
           audioStore.setVolume(val / 100)
           addBlock({ type: 'output', tag: '[music]', tagType: 'info', text: `🔊 音量已设置为: ${val}%` })

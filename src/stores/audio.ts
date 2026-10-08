@@ -21,7 +21,7 @@ export const useAudioStore = defineStore('audio', () => {
   const isPlaying = ref(false)
   const volume = ref(0.6) // 60% default
 
-  const currentTrack = computed(() => playlist[currentTrackIndex.value])
+  const currentTrack = computed(() => playlist[currentTrackIndex.value]!)
 
   function bindAudio(el: HTMLAudioElement) {
     audioEl.value = el

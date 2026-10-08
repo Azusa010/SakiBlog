@@ -73,9 +73,9 @@ let typingGibberish: string[] = []
 const rainCols = [0,2,4,1,3,7,6,5,2,8,9,3,4,7,6,5,1,2,9,0,3,4]
 
 const currentContext = computed(() => {
-  if (terminal.isOpen) return 'code'
-  if (route.name === 'NotFound' || route.path.includes('404')) return 'error'
-  return 'cursor'
+  if (terminal.isOpen) return 'code' as string
+  if (route.name === 'NotFound' || route.path.includes('404')) return 'error' as string
+  return 'cursor' as string
 })
 
 // --- Audio Visualizer Setup ---
@@ -94,7 +94,7 @@ function initAudio() {
   source.connect(analyser)
   analyser.connect(audioCtx.destination)
   
-  dataArray = new Uint8Array(analyser.frequencyBinCount)
+  dataArray = new Uint8Array(analyser!.frequencyBinCount) as any
 }
 
 function toggleMusic(e: Event) {
@@ -290,7 +290,7 @@ function getMatrixScreen() {
   for(let r=0; r<10; r++){
     let rowStr = ""
     for(let c=0; c<22; c++){
-      let pos = (rainCols[c] + Math.floor(Date.now() / 150)) % 15
+      let pos = (rainCols[c]! + Math.floor(Date.now() / 150)) % 15
       if (pos === r) rowStr += "3"
       else if (pos - 1 === r || pos - 2 === r) rowStr += "L"
       else rowStr += "2"
@@ -302,7 +302,7 @@ function getMatrixScreen() {
 
 function getEQScreen() {
   if (!analyser || !dataArray) return screens['cursor']
-  analyser.getByteFrequencyData(dataArray)
+  analyser!.getByteFrequencyData(dataArray as any)
   
   let eqScreen = []
   for (let r = 0; r < 10; r++) {
@@ -361,12 +361,12 @@ function drawFrame() {
   else screenData = screens[activeScreen] || screens['cursor']
 
   for (let y = 0; y < 32; y++) {
-    let rowStr = termBaseTemplate[y]
+    let rowStr = termBaseTemplate[y]!
     if (y >= 7 && y <= 16) {
-      rowStr = rowStr.substring(0, 5) + screenData[y-7] + rowStr.substring(27)
+      rowStr = rowStr.substring(0, 5) + screenData![y-7] + rowStr.substring(27)
     }
     for (let x = 0; x < 32; x++) {
-      let code = rowStr[x]
+      let code = rowStr![x]!
       if (forceGreen && code === '3') code = 'L' 
       if (code !== '0') {
         ctx.fillStyle = palette[code] as string
