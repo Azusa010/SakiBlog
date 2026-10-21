@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Agent 端侧小模型内嵌实战指南 (8GB VRAM 专版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        zinc: {
+                            850: '#1f1f23',
+                            925: '#121215',
+                            950: '#09090b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #09090b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #27272a;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3f3f46;
+        }
+        .code-block {
+            background: #0c0c0f;
+            border: 1px solid #27272a;
+        }
+        .grid-bg {
+            background-image: radial-gradient(rgba(16, 185, 129, 0.08) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.55; }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200 font-sans antialiased selection:bg-emerald-500/30 selection:text-emerald-200 min-h-screen flex flex-col">
+
+    <!-- Top Header Bar -->
+    <header class="sticky top-0 z-40 h-16 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 px-4 lg:px-8 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <!-- Mobile menu button -->
+            <button id="mobileMenuBtn" class="lg:hidden p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+            <div class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-mono font-bold text-sm shadow-inner">
+                8G
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-bold text-zinc-100 text-sm sm:text-base tracking-tight">Personal Agent 端侧小模型内嵌实战指南</h1>
+                    <span class="hidden sm:inline-block px-2 py-0.5 text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">8GB VRAM 专版</span>
+                </div>
+                <p class="text-xs text-zinc-400 hidden sm:block">偷师开源轮子 · 零 Schema 极速调用 · 单底座多 LoRA 热切换 · 异构级联飞轮</p>
+            </div>
+        </div>
+
+        <!-- Progress & Export Controls -->
+        <div class="flex items-center gap-4">
+            <div class="hidden md:flex items-center gap-3 bg-zinc-900/90 border border-zinc-800 px-3.5 py-1.5 rounded-lg">
+                <div class="text-xs">
+                    <span class="text-zinc-400">实战进度:</span>
+                    <span id="headerProgressText" class="font-mono font-semibold text-emerald-400 ml-1">0 / 12 (0%)</span>
+                </div>
+                <div class="w-28 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                    <div id="headerProgressBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 w-0 transition-all duration-300"></div>
+                </div>
+            </div>
+
+            <button onclick="exportMarkdownReport()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-medium transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                <span>导出 Markdown 笔记</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Layout Container -->
+    <div class="flex-1 flex overflow-hidden relative">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-30 w-72 bg-zinc-925 border-r border-zinc-800/80 transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out flex flex-col justify-between overflow-y-auto pt-4 pb-6 px-4">
+            <div class="space-y-6">
+                <!-- Target Specs Banner -->
+                <div class="p-3 rounded-xl bg-zinc-900/90 border border-zinc-800/90 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-zinc-400 font-medium">目标硬件栈</span>
+                        <span class="font-mono text-amber-400">8GB VRAM</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-1.5 text-[11px] font-mono">
+                        <div class="bg-zinc-950 px-2 py-1 rounded border border-zinc-800/60 text-zinc-300">Base: Qwen2.5-3B</div>
+                        <div class="bg-zinc-950 px-2 py-1 rounded border border-zinc-800/60 text-zinc-300">Train: Unsloth 4b</div>
+                        <div class="bg-zinc-950 px-2 py-1 rounded border border-zinc-800/60 text-zinc-300">Infer: GGUF Q4_K</div>
+                        <div class="bg-zinc-950 px-2 py-1 rounded border border-zinc-800/60 text-zinc-300">Log: jsonl + MD</div>
+                    </div>
+                </div>
+
+                <!-- Navigation Menu -->
+                <nav class="space-y-1">
+                    <div class="px-2 pb-1 text-[11px] font-mono uppercase tracking-wider text-zinc-500">核心模块导航</div>
+                    <a href="#sec-arch" onclick="closeMobileMenu()" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800/60 hover:text-white transition">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <span>0. 架构全景与开源拆解</span>
+                    </a>
+                    <a href="#sec-phase1" onclick="closeMobileMenu()" class="nav-link flex items-center justify-between px-3 py-2 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800/60 hover:text-white transition">
+                        <div class="flex items-center gap-2.5">
+                            <span class="font-mono text-xs text-cyan-400">P1</span>
+                            <span>多步轨迹合成 (APIGen)</span>
+                        </div>
+                        <span id="badge-p1" class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">0/3</span>
+                    </a>
+                    <a href="#sec-phase2" onclick="closeMobileMenu()" class="nav-link flex items-center justify-between px-3 py-2 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800/60 hover:text-white transition">
+                        <div class="flex items-center gap-2.5">
+                            <span class="font-mono text-xs text-emerald-400">P2</span>
+                            <span>8GB 显存微调与计算器</span>
+                        </div>
+                        <span id="badge-p2" class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">0/3</span>
+                    </a>
+                    <a href="#sec-phase3" onclick="closeMobileMenu()" class="nav-link flex items-center justify-between px-3 py-2 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800/60 hover:text-white transition">
+                        <div class="flex items-center gap-2.5">
+                            <span class="font-mono text-xs text-amber-400">P3</span>
+                            <span>GBNF 受限解码锁死</span>
+                        </div>
+                        <span id="badge-p3" class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">0/3</span>
+                    </a>
+                    <a href="#sec-phase4" onclick="closeMobileMenu()" class="nav-link flex items-center justify-between px-3 py-2 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800/60 hover:text-white transition">
+                        <div class="flex items-center gap-2.5">
+                            <span class="font-mono text-xs text-purple-400">P4</span>
+                            <span>异构级联与数据飞轮</span>
+                        </div>
+                        <span id="badge-p4" class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">0/3</span>
+                    </a>
+                    <a href="#sec-checklist" onclick="closeMobileMenu()" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800/60 hover:text-white transition">
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                        <span>5. 工程验收总表与导出</span>
+                    </a>
+                </nav>
+
+                <!-- Quick Architecture Key Metrics -->
+                <div class="p-3.5 rounded-xl bg-gradient-to-b from-emerald-950/30 to-zinc-900 border border-emerald-500/20 space-y-2.5">
+                    <div class="text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        <span>为什么手搓而非调包？</span>
+                    </div>
+                    <p class="text-xs text-zinc-400 leading-relaxed">
+                        通用工具模型每次请求需携带 <span class="text-zinc-200 font-mono">2000+ Tokens</span> 的 JSON Schema。手搓微调可将私有工具烘焙进权重，实现 <span class="text-emerald-400 font-mono">Zero-Schema</span> 极速调用，首字延迟压至 <span class="text-emerald-400 font-mono">25ms</span>。
+                    </p>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-500">
+                <span>本地状态自动保存</span>
+                <button onclick="resetProgress()" class="text-zinc-400 hover:text-rose-400 underline transition">重置进度</button>
+            </div>
+        </aside>
+
+        <!-- Main Scrollable Content -->
+        <main class="flex-1 overflow-y-auto grid-bg px-4 sm:px-8 py-8 space-y-12 max-w-6xl mx-auto">
+
+            <!-- SECTION 0: ARCHITECTURE & WHEEL DECONSTRUCTION -->
+            <section id="sec-arch" class="space-y-6 scroll-mt-20">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-zinc-800 pb-4">
+                    <div>
+                        <div class="inline-flex items-center gap-2 text-xs font-mono text-emerald-400 mb-1">
+                            <span>SECTION 00</span>
+                            <span>//</span>
+                            <span>ARCHITECTURE & DECONSTRUCTION</span>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white tracking-tight">架构全景与顶级开源轮子拆解</h2>
+                    </div>
+                    <!-- Interactive Architecture Switch -->
+                    <div class="inline-flex p-1 rounded-xl bg-zinc-900 border border-zinc-800 self-start">
+                        <button id="btnArchCloud" onclick="switchArchMode('cloud')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition text-zinc-400 hover:text-white">
+                            传统纯云端 ReAct (痛点)
+                        </button>
+                        <button id="btnArchHybrid" onclick="switchArchMode('hybrid')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            端云级联 + 多 LoRA 架构 (目标)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Interactive Architecture Comparison Panel -->
+                <div id="archPanel" class="p-6 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-xl transition-all">
+                    <!-- Dynamic content populated by JS -->
+                </div>
+
+                <!-- Open Source Wheel Reference Matrix -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                            <span class="w-1.5 h-4 bg-cyan-400 rounded-full"></span>
+                            <span>五大开源“现成轮子”核心机制拆解（点击卡片切换偷师要点）</span>
+                        </h3>
+                        <span class="text-xs text-zinc-400">学原理与工程闭环，拒绝黑盒依赖</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3" id="wheelCardsContainer">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- Selected Wheel Detail Box -->
+                    <div id="wheelDetailBox" class="p-5 rounded-xl bg-zinc-900/70 border border-cyan-500/30 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 1: PHASE 1 - APIGEN DATA SYNTHESIS -->
+            <section id="sec-phase1" class="space-y-6 scroll-mt-20">
+                <div class="border-b border-zinc-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <div class="text-xs font-mono text-cyan-400">PHASE 01 // DATA-CENTRIC AI & ZERO-SCHEMA</div>
+                        <h2 class="text-xl sm:text-2xl font-bold text-white mt-0.5">偷师 APIGen：多步工具轨迹合成与 Zero-Schema 烘焙</h2>
+                    </div>
+                    <span class="self-start sm:self-auto px-2.5 py-1 rounded-md text-xs font-mono bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                        耗时预估: 1 个周末
+                    </span>
+                </div>
+
+                <!-- Interactive Token Comparison Viewer -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="lg:col-span-5 bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-mono uppercase text-zinc-400">核心突破点：为什么能快 10 倍？</span>
+                                <span class="px-2 py-0.5 text-[11px] font-mono bg-emerald-500/10 text-emerald-400 rounded">Zero-Schema SFT</span>
+                            </div>
+                            <h3 class="text-base font-semibold text-white">将私有工具说明书直接“烘焙”进模型权重</h3>
+                            <p class="text-xs text-zinc-400 leading-relaxed">
+                                通用模型每次调用工具，必须在 System Prompt 里塞入完整的 JSON Schema。而在你的 Personal Agent 中，核心工具（如读写本地笔记、查 SQLite、执行终端命令、操作网页 DOM）固定在 15~25 个左右。
+                            </p>
+                            <div class="space-y-2 pt-2">
+                                <div class="p-3 rounded-lg bg-zinc-950 border border-zinc-800/80">
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="text-rose-400 font-medium">传统携带 Schema Prompt (每步)</span>
+                                        <span class="font-mono text-rose-400">~2,420 Tokens</span>
+                                    </div>
+                                    <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                        <div class="h-full bg-rose-500 w-full"></div>
+                                    </div>
+                                </div>
+                                <div class="p-3 rounded-lg bg-zinc-950 border border-emerald-500/30">
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="text-emerald-400 font-medium">烘焙后 Zero-Schema Prompt (每步)</span>
+                                        <span class="font-mono text-emerald-400">~165 Tokens (-93%)</span>
+                                    </div>
+                                    <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                        <div class="h-full bg-emerald-400 w-[8%]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 rounded-lg bg-cyan-950/30 border border-cyan-500/20 text-xs text-cyan-200 space-y-1">
+                            <div class="font-semibold">黄金法则：20% 错误自愈轨迹 (Error-Recovery)</div>
+                            <p class="text-cyan-300/80 text-[11px] leading-relaxed">
+                                合成 500 条多步轨迹时，必须强制注入 20% 的「工具返回报错 -> 模型看懂报错并修正参数重试」样本，防止 3B 小模型在真实环境中遇到报错陷入死循环。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Prompt Stripping Preview -->
+                    <div class="lg:col-span-7 bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 flex flex-col">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-semibold text-zinc-300">训练样本构造对比（点击切换查看）</span>
+                            <div class="inline-flex rounded-lg bg-zinc-950 p-1 border border-zinc-800">
+                                <button id="btnPromptBefore" onclick="togglePromptView('before')" class="px-2.5 py-1 rounded text-xs font-mono text-zinc-400 hover:text-white transition">
+                                    合成阶段 (Teacher 完整视角)
+                                </button>
+                                <button id="btnPromptAfter" onclick="togglePromptView('after')" class="px-2.5 py-1 rounded text-xs font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition">
+                                    训练阶段 (剥离 Schema 后)
+                                </button>
+                            </div>
+                        </div>
+                        <pre id="promptComparisonViewer" class="flex-1 code-block rounded-lg p-4 text-xs font-mono text-zinc-300 overflow-x-auto leading-relaxed"></pre>
+                    </div>
+                </div>
+
+                <!-- Code Template: APIGen + Pydantic Execution Verification -->
+                <div class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/60">
+                    <div class="px-4 py-2.5 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                            <span class="text-xs font-mono text-zinc-200">phase1_apigen_synthesis_verifier.py</span>
+                            <span class="text-[11px] text-zinc-500 hidden sm:inline">// 合成多步轨迹 + Pydantic 强校验过滤 + 剥离 Schema</span>
+                        </div>
+                        <button onclick="copyCode('codePhase1', this)" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition">
+                            复制代码
+                        </button>
+                    </div>
+                    <pre id="codePhase1" class="p-4 text-xs font-mono text-zinc-300 overflow-x-auto leading-relaxed"><code>import json
+from typing import Literal, Union
+from pydantic import BaseModel, Field, ValidationError
+
+# 1. 定义你 Personal Agent 的核心工具严格参数 Schema (用于合成校验，不放进最终训练 Prompt)
+class FsReadArgs(BaseModel):
+    path: str = Field(..., pattern=r"^(\./|/|[a-zA-Z]:).*")
+    max_lines: int = Field(default=100, ge=1, le=500)
+
+class SqlQueryArgs(BaseModel):
+    sql: str = Field(..., description="只允许 SELECT 查询语句")
+
+class MemoryPatchArgs(BaseModel):
+    section: Literal["user_prefs", "active_tasks", "daily_facts"]
+    operation: Literal["append", "replace"]
+    content: str
+
+TOOL_REGISTRY = {
+    "fs_read": FsReadArgs,
+    "sqlite_query": SqlQueryArgs,
+    "memory_patch": MemoryPatchArgs,
+}
+
+class CompactToolAction(BaseModel):
+    """训练 3B 小模型输出的极简无废话 Action 协议 (限制 thought 长度 <= 25 字)"""
+    thought: str = Field(..., max_length=40)
+    call: Literal["fs_read", "sqlite_query", "memory_patch", "final_answer", "escalate_to_cloud"]
+    args: dict
+
+def verify_trajectory(messages: list[dict]) -> tuple[bool, str]:
+    """偷师 APIGen 核心：对大模型合成的每一步 Tool Call 进行本地 Pydantic 语法与参数实体验证"""
+    for msg in messages:
+        if msg["role"] == "assistant":
+            try:
+                action = CompactToolAction.model_validate_json(msg["content"])
+                if action.call in TOOL_REGISTRY:
+                    # 校验具体工具的参数是否100%符合你的本地 Python 函数签名
+                    TOOL_REGISTRY[action.call].model_validate(action.args)
+            except ValidationError as e:
+                return False, f"Schema 校验未通过: {e}"
+    return True, "OK"
+
+def strip_schema_for_sft(raw_trajectory: list[dict]) -> list[dict]:
+    """将冗长的 2400 Token 工具定义 System Prompt 替换为 30 Token 的极简指纹"""
+    compact_sys = (
+        "You are LocalExecutor-3B. Output strict JSON: "
+        '{"thought": "<15字内简短意图>", "call": "<tool_name>", "args": {...}}'
+    )
+    cleaned = [{"role": "system", "content": compact_sys}]
+    for m in raw_trajectory:
+        if m["role"] != "system":
+            cleaned.append(m)
+    return cleaned
+
+# 示例：验证并导出 Unsloth 训练所需的 ShareGPT / ChatML jsonl
+if __name__ == "__main__":
+    sample_traj = [
+        {"role": "system", "content": "...[2400 tokens of verbose JSON schema]..."},
+        {"role": "user", "content": "查一下我昨天记在数据库里的开销，并更新到周报记忆里"},
+        {"role": "assistant", "content": '{"thought":"先查数据库昨日开销记录","call":"sqlite_query","args":{"sql":"SELECT item, amount FROM expenses WHERE date = date(\'now\', \'-1 day\')"}}'},
+        {"role": "tool", "content": '[{"item": "云服务账单", "amount": 42.5}]'},
+        {"role": "assistant", "content": '{"thought":"将开销写入active_tasks记忆","call":"memory_patch","args":{"section":"daily_facts","operation":"append","content":"昨日云服务开销 42.5 元"}}'}
+    ]
+    ok, reason = verify_trajectory(sample_traj)
+    if ok:
+        sft_ready = strip_schema_for_sft(sample_traj)
+        print("校验通过！生成 Zero-Schema 训练样本:\n", json.dumps(sft_ready, ensure_ascii=False, indent=2))</code></pre>
+                </div>
+
+                <!-- Phase 1 Milestones -->
+                <div class="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-2">
+                    <div class="text-xs font-mono text-zinc-400 mb-2">PHASE 1 动手验收节点（点击勾选自动保存）：</div>
+                    <div id="milestones-p1" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: PHASE 2 - 8GB VRAM TRAINING & CALCULATOR -->
+            <section id="sec-phase2" class="space-y-6 scroll-mt-20">
+                <div class="border-b border-zinc-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <div class="text-xs font-mono text-emerald-400">PHASE 02 // 8GB VRAM QLoRA & MULTI-ADAPTER</div>
+                        <h2 class="text-xl sm:text-2xl font-bold text-white mt-0.5">8GB 显存极致微调：单基座 + 双专职 LoRA 配方</h2>
+                    </div>
+                    <span class="self-start sm:self-auto px-2.5 py-1 rounded-md text-xs font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                        训练时长: ~40 分钟 / LoRA
+                    </span>
+                </div>
+
+                <!-- Interactive 8GB VRAM Budget Calculator -->
+                <div class="p-6 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-lg space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800 pb-4">
+                        <div>
+                            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+                                </svg>
+                                <span>8GB VRAM 训练与常驻推理显存预算模拟器</span>
+                            </h3>
+                            <p class="text-xs text-zinc-400 mt-0.5">调整参数，实时评估 Unsloth 4-bit 训练峰值显存与本地 GGUF 常驻显存占用</p>
+                        </div>
+                        <span id="vramStatusBadge" class="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                            黄金甜点位 · 安全运行
+                        </span>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="space-y-2">
+                            <label class="text-xs text-zinc-300 font-medium flex justify-between">
+                                <span>基座模型量级 (Base Model)</span>
+                                <span id="lblModelSize" class="font-mono text-emerald-400">3B (推荐)</span>
+                            </label>
+                            <select id="selModelSize" onchange="updateVramCalc()" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:border-emerald-500">
+                                <option value="0.5">Qwen2.5-0.5B-Instruct (极轻量路由/守护)</option>
+                                <option value="1.5">Qwen2.5-Coder-1.5B-Instruct (高速执行)</option>
+                                <option value="3.0" selected>Qwen2.5-Coder-3B-Instruct (黄金甜点主推)</option>
+                                <option value="7.0">Qwen2.5-Coder-7B-Instruct (8GB 极限高压)</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-xs text-zinc-300 font-medium flex justify-between">
+                                <span>训练最大上下文 (Max Seq Len)</span>
+                                <span id="lblCtxLen" class="font-mono text-emerald-400">4096</span>
+                            </label>
+                            <select id="selCtxLen" onchange="updateVramCalc()" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:border-emerald-500">
+                                <option value="1024">1024 Tokens (短指令单步)</option>
+                                <option value="2048">2048 Tokens (常规多步工具)</option>
+                                <option value="4096" selected>4096 Tokens (长轨迹 + 事件压缩)</option>
+                                <option value="8192">8192 Tokens (超长窗口)</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-xs text-zinc-300 font-medium flex justify-between">
+                                <span>LoRA Rank (全线性层 r 值)</span>
+                                <span id="lblLoraRank" class="font-mono text-emerald-400">r = 32</span>
+                            </label>
+                            <select id="selLoraRank" onchange="updateVramCalc()" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:border-emerald-500">
+                                <option value="16">r = 16, alpha = 32 (轻量风格微调)</option>
+                                <option value="32" selected>r = 32, alpha = 64 (强记忆烘焙工具签名)</option>
+                                <option value="64">r = 64, alpha = 128 (重度知识注入)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Meters -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                        <!-- Training Meter -->
+                        <div class="p-4 rounded-xl bg-zinc-950 border border-zinc-800/90 space-y-3">
+                            <div class="flex justify-between items-baseline">
+                                <span class="text-xs font-medium text-zinc-300">Unsloth 4-bit QLoRA 训练峰值显存</span>
+                                <span id="valTrainVram" class="font-mono text-sm font-bold text-emerald-400">5.45 GB / 8.00 GB</span>
+                            </div>
+                            <div class="w-full h-3 bg-zinc-800 rounded-full overflow-hidden p-0.5">
+                                <div id="barTrainVram" class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-300" style="width: 68%"></div>
+                            </div>
+                            <div id="descTrainVram" class="text-[11px] font-mono text-zinc-400">
+                                权重: 2.1GB | 梯度+优化器: 1.2GB | 激活值(开启unsloth检查点): 2.15GB
+                            </div>
+                        </div>
+
+                        <!-- Inference Meter -->
+                        <div class="p-4 rounded-xl bg-zinc-950 border border-zinc-800/90 space-y-3">
+                            <div class="flex justify-between items-baseline">
+                                <span class="text-xs font-medium text-zinc-300">本地常驻推理显存 (GGUF Q4_K_M + KV Cache)</span>
+                                <span id="valInferVram" class="font-mono text-sm font-bold text-cyan-400">2.45 GB / 8.00 GB</span>
+                            </div>
+                            <div class="w-full h-3 bg-zinc-800 rounded-full overflow-hidden p-0.5">
+                                <div id="barInferVram" class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-400 transition-all duration-300" style="width: 31%"></div>
+                            </div>
+                            <div id="descInferVram" class="text-[11px] font-mono text-zinc-400">
+                                常驻仅占 ~30% 显存，完全不影响你同时开 IDE、浏览器与桌面环境，生成速度 ~95 tokens/s。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Two Specialized LoRAs Explanation -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-5 rounded-xl bg-zinc-900/70 border border-zinc-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 text-xs font-mono bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 rounded">Adapter #1: lora-executor</span>
+                            <span class="text-xs font-mono text-zinc-500">~65 MB</span>
+                        </div>
+                        <h4 class="text-sm font-bold text-white">前台极速工具调用器</h4>
+                        <p class="text-xs text-zinc-400 leading-relaxed">
+                            负责接管 Agent 主循环中的连续多步工具调用。输入精简后的历史 Observation，输出单行 JSON 决策，零废话 CoT，遇到连续异常主动调用 <code class="text-cyan-300">escalate_to_cloud</code>。
+                        </p>
+                    </div>
+
+                    <div class="p-5 rounded-xl bg-zinc-900/70 border border-zinc-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 text-xs font-mono bg-purple-500/10 text-purple-300 border border-purple-500/20 rounded">Adapter #2: lora-compactor</span>
+                            <span class="text-xs font-mono text-zinc-500">~65 MB</span>
+                        </div>
+                        <h4 class="text-sm font-bold text-white">后台双游标窗口压缩与记忆归档器</h4>
+                        <p class="text-xs text-zinc-400 leading-relaxed">
+                            当你的 <code class="text-purple-300">main_events.jsonl</code> 滑动窗口满时在后台静默唤醒。将原始事件块压缩为高密度摘要，并生成对本地 Markdown 记忆文件的结构化 Diff Patch。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Code Template: Unsloth 8GB QLoRA Training Script -->
+                <div class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/60">
+                    <div class="px-4 py-2.5 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                            <span class="text-xs font-mono text-zinc-200">phase2_train_unsloth_8gb.py</span>
+                            <span class="text-[11px] text-zinc-500 hidden sm:inline">// 专为 8GB 显存调优的 Unsloth 训练 + 导出脚本</span>
+                        </div>
+                        <button onclick="copyCode('codePhase2', this)" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition">
+                            复制代码
+                        </button>
+                    </div>
+                    <pre id="codePhase2" class="p-4 text-xs font-mono text-zinc-300 overflow-x-auto leading-relaxed"><code>from unsloth import FastLanguageModel
+from trl import SFTTrainer
+from transformers import TrainingArguments
+from datasets import load_dataset
+import torch
+
+# 1. 加载 4-bit 量化 Qwen2.5-Coder-3B 基座 (8GB 显存黄金底座)
+max_seq_length = 4096
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name="Qwen/Qwen2.5-Coder-3B-Instruct",
+    max_seq_length=max_seq_length,
+    load_in_4bit=True,          # 开启 4-bit QLoRA
+    dtype=None,                 # 自动检测 bf16/fp16
+)
+
+# 2. 挂载全线性层 LoRA (r=32 保证能把你的私有工具 API 签名死死背进权重里)
+model = FastLanguageModel.get_peft_model(
+    model,
+    r=32,
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
+                    "gate_proj", "up_proj", "down_proj"],
+    lora_alpha=64,
+    lora_dropout=0,             # 设为 0 以启用 Unsloth 底层内核加速
+    bias="none",
+    use_gradient_checkpointing="unsloth", # 省下 30% 显存，8GB 跑 4096 长度不爆的关键！
+    random_state=3407,
+)
+
+# 3. 加载你在 Phase 1 洗好的 Zero-Schema 多步工具轨迹数据
+dataset = load_dataset("json", data_files="sft_zero_schema_trajectories.jsonl", split="train")
+
+def format_chatml(examples):
+    texts = [
+        tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=False)
+        for msgs in examples["messages"]
+    ]
+    return {"text": texts}
+
+dataset = dataset.map(format_chatml, batched=True)
+
+# 4. 8GB VRAM 专属训练超参 (batch_size=1 + grad_accum=8)
+trainer = SFTTrainer(
+    model=model,
+    tokenizer=tokenizer,
+    train_dataset=dataset,
+    dataset_text_field="text",
+    max_seq_length=max_seq_length,
+    packing=True,               # 开启样本拼接加速多轮短轨迹训练
+    args=TrainingArguments(
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=8,
+        warmup_steps=15,
+        num_train_epochs=3,
+        learning_rate=2e-4,
+        fp16=not torch.cuda.is_bf16_supported(),
+        bf16=torch.cuda.is_bf16_supported(),
+        logging_steps=5,
+        optim="adamw_8bit",     # 8-bit 优化器进一步压降显存峰值
+        weight_decay=0.01,
+        lr_scheduler_type="cosine",
+        output_dir="outputs/lora_executor",
+    ),
+)
+
+trainer.train()
+
+# 5. 保存轻量 LoRA 适配器 (用于多 LoRA 热切换) 或直接导出 Q4_K_M GGUF
+model.save_pretrained("lora_adapters/lora-tool-executor")
+tokenizer.save_pretrained("lora_adapters/lora-tool-executor")
+# 若只需单模型部署，也可直接一键合并导出 GGUF:
+# model.save_pretrained_gguf("gguf_model", tokenizer, quantization_method="q4_k_m")</code></pre>
+                </div>
+
+                <!-- Phase 2 Milestones -->
+                <div class="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-2">
+                    <div class="text-xs font-mono text-zinc-400 mb-2">PHASE 2 动手验收节点：</div>
+                    <div id="milestones-p2" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: PHASE 3 - CONSTRAINED DECODING & GBNF -->
+            <section id="sec-phase3" class="space-y-6 scroll-mt-20">
+                <div class="border-b border-zinc-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <div class="text-xs font-mono text-amber-400">PHASE 03 // CONSTRAINED DECODING & GBNF GRAMMAR</div>
+                        <h2 class="text-xl sm:text-2xl font-bold text-white mt-0.5">偷师 llama.cpp：用 GBNF 状态机物理锁死 0% 格式报错</h2>
+                    </div>
+                    <span class="self-start sm:self-auto px-2.5 py-1 rounded-md text-xs font-mono bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                        核心收益: JSON 解析成功率 100%
+                    </span>
+                </div>
+
+                <!-- Interactive Logits Masking Simulator -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="lg:col-span-6 bg-zinc-900/80 border border-zinc-800 rounded-xl p-5 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono text-amber-400 uppercase">底层原理解析</span>
+                            <span class="text-xs text-zinc-400">Logits Masking 状态机</span>
+                        </div>
+                        <h3 class="text-base font-bold text-white">不要赌 3B 模型不犯错，在采样前直接屏蔽非法 Token</h3>
+                        <p class="text-xs text-zinc-400 leading-relaxed">
+                            微调只能让模型“大概率”输出正确格式，但在长上下文干扰下，3B 模型仍可能漏写引号或编造不存在的工具名。通过编写 <strong>GBNF (GGML BNF)</strong> 语法规则，推理引擎会在生成每一个 Token 时，将不符合语法树的词表概率直接设为 <code class="text-rose-400">-∞</code>。
+                        </p>
+
+                        <!-- Interactive Step Simulator -->
+                        <div class="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-zinc-400">当前已生成前缀:</span>
+                                <button onclick="cycleLogitsDemo()" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono text-[11px] hover:bg-amber-500/30 transition">
+                                    切换解码位置 ↻
+                                </button>
+                            </div>
+                            <div id="logitsPrefixDisplay" class="p-2.5 rounded bg-zinc-900 font-mono text-xs text-emerald-400 border border-zinc-800">
+                                {"thought": "查昨日开销", "call": "
+                            </div>
+                            <div class="text-[11px] text-zinc-400">词表候选 Token 概率分布 (GBNF 过滤后):</div>
+                            <div id="logitsCandidatesBox" class="space-y-1.5 font-mono text-xs">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GBNF Grammar Code Box -->
+                    <div class="lg:col-span-6 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/60 flex flex-col">
+                        <div class="px-4 py-2.5 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                                <span class="text-xs font-mono text-zinc-200">agent_action.gbnf</span>
+                            </div>
+                            <button onclick="copyCode('codePhase3', this)" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition">
+                                复制语法
+                            </button>
+                        </div>
+                        <pre id="codePhase3" class="p-4 text-xs font-mono text-zinc-300 overflow-x-auto leading-relaxed flex-1"><code># 物理锁死 3B 模型只能输出极简 thought + 合法工具名 + 对应参数结构
+root   ::= "{" ws "\"thought\":" ws string "," ws dispatch "}" ws
+
+# 路由分发：一旦生成了特定工具名，后续 args 必须严格匹配该工具的专属语法树！
+dispatch ::= fs-read-call | sql-query-call | mem-patch-call | escalate-call | final-call
+
+fs-read-call ::= "\"call\":" ws "\"fs_read\"," ws "\"args\":" ws "{" ws "\"path\":" ws string ("," ws "\"max_lines\":" ws number)? "}"
+sql-query-call ::= "\"call\":" ws "\"sqlite_query\"," ws "\"args\":" ws "{" ws "\"sql\":" ws string "}"
+mem-patch-call ::= "\"call\":" ws "\"memory_patch\"," ws "\"args\":" ws "{" ws "\"section\":" ws section-enum "," ws "\"operation\":" ws op-enum "," ws "\"content\":" ws string "}"
+escalate-call ::= "\"call\":" ws "\"escalate_to_cloud\"," ws "\"args\":" ws "{" ws "\"reason\":" ws string "}"
+final-call ::= "\"call\":" ws "\"final_answer\"," ws "\"args\":" ws "{" ws "\"reply\":" ws string "}"
+
+section-enum ::= "\"user_prefs\"" | "\"active_tasks\"" | "\"daily_facts\""
+op-enum      ::= "\"append\"" | "\"replace\""
+
+# 基础图元定义
+string ::= "\"" ([^"\\] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F]{4}))* "\""
+number ::= [0-9]+
+ws     ::= [ \t\n]*</code></pre>
+                    </div>
+                </div>
+
+                <!-- Phase 3 Milestones -->
+                <div class="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-2">
+                    <div class="text-xs font-mono text-zinc-400 mb-2">PHASE 3 动手验收节点：</div>
+                    <div id="milestones-p3" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: PHASE 4 - CASCADING HARNESS & DATA FLYWHEEL -->
+            <section id="sec-phase4" class="space-y-6 scroll-mt-20">
+                <div class="border-b border-zinc-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <div class="text-xs font-mono text-purple-400">PHASE 04 // FRUGALGPT CASCADING & DATA FLYWHEEL</div>
+                        <h2 class="text-xl sm:text-2xl font-bold text-white mt-0.5">偷师 FrugalGPT & Apple：异构级联与夜间自进化飞轮</h2>
+                    </div>
+                    <span class="self-start sm:self-auto px-2.5 py-1 rounded-md text-xs font-mono bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                        终极闭环: 越用越强的个人 Agent
+                    </span>
+                </div>
+
+                <!-- Three Pillars of the Harness -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-1.5">
+                        <div class="text-xs font-mono text-emerald-400">01. Observation Pruning</div>
+                        <h4 class="text-sm font-bold text-white">工具返回值瘦身拦截器</h4>
+                        <p class="text-xs text-zinc-400 leading-relaxed">
+                            3B 模型最怕网页源码或长日志塞爆上下文。在 Harness 层将超过 800 字符的原始返回值存入临时文件，仅向 3B 模型喂入结构化预览与行号索引。
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-1.5">
+                        <div class="text-xs font-mono text-amber-400">02. Seamless Escalation</div>
+                        <h4 class="text-sm font-bold text-white">动态熔断与云端接力</h4>
+                        <p class="text-xs text-zinc-400 leading-relaxed">
+                            当本地 3B 模型连续两次触发工具报错，或主动调用 <code class="text-amber-300">escalate_to_cloud</code> 时，无缝将已搜集的本地上下文打包移交云端大模型完成兜底。
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-1.5">
+                        <div class="text-xs font-mono text-purple-400">03. Nightly Data Flywheel</div>
+                        <h4 class="text-sm font-bold text-white">失败轨迹自动转微调样本</h4>
+                        <p class="text-xs text-zinc-400 leading-relaxed">
+                            每次触发云端兜底时，云端大模型的正确决策会与本地 3B 的失败尝试一起写入 <code class="text-purple-300">flywheel_dataset.jsonl</code>，周末自动跑 15 分钟增量微调。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Code Template: Complete Cascading Agent Loop -->
+                <div class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/60">
+                    <div class="px-4 py-2.5 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+                            <span class="text-xs font-mono text-zinc-200">phase4_cascading_agent_harness.py</span>
+                            <span class="text-[11px] text-zinc-500 hidden sm:inline">// 本地 3B 主力循环 + 返回值截断 + 云端熔断兜底 + 双游标后台压缩</span>
+                        </div>
+                        <button onclick="copyCode('codePhase4', this)" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition">
+                            复制代码
+                        </button>
+                    </div>
+                    <pre id="codePhase4" class="p-4 text-xs font-mono text-zinc-300 overflow-x-auto leading-relaxed"><code>import json
+import time
+from pathlib import Path
+
+class PersonalAgentHarness:
+    def __init__(self, local_llm, cloud_llm, event_log_path="main_events.jsonl"):
+        self.local_llm = local_llm          # 挂载了 GBNF 与多 LoRA 的本地 llama.cpp 实例
+        self.cloud_llm = cloud_llm          # DeepSeek-V3 / Claude 云端兜底客户端
+        self.event_log = Path(event_log_path)
+        self.flywheel_log = Path("flywheel_correction_samples.jsonl")
+
+    def prune_observation(self, raw_obs: str, max_chars: int = 600) -> str:
+        """防止长网页/长日志冲垮 3B 模型的注意力窗口"""
+        if len(raw_obs) <= max_chars:
+            return raw_obs
+        head = raw_obs[:400]
+        tail = raw_obs[-150:]
+        return f"{head}\n...[已截断 {len(raw_obs)-550} 字符，如需详情请加过滤条件]...\n{tail}"
+
+    async def run_task(self, user_query: str):
+        context = [{"role": "user", "content": user_query}]
+        consecutive_errors = 0
+
+        for step in range(1, 9):  # 最大允许 8 步本地闭环工具调用
+            # 1. 默认使用本地 3B 模型 + lora-executor 极速推理 (耗时 ~250ms)
+            raw_decision = await self.local_llm.generate(
+                messages=context,
+                lora_adapter="lora-tool-executor",
+                gbnf_grammar="agent_action.gbnf"
+            )
+            action = json.loads(raw_decision)
+            self._append_event("local_action", action)
+
+            # 2. 检查是否完成或主动请求云端支援
+            if action["call"] == "final_answer":
+                return action["args"]["reply"]
+
+            if action["call"] == "escalate_to_cloud" or consecutive_errors >= 2:
+                return await self._fallback_to_cloud(context, failed_action=action)
+
+            # 3. 执行本地工具并清洗 Observation
+            try:
+                raw_result = await self.execute_local_tool(action["call"], action["args"])
+                clean_obs = self.prune_observation(str(raw_result))
+                context.append({"role": "assistant", "content": raw_decision})
+                context.append({"role": "tool", "content": clean_obs})
+                consecutive_errors = 0
+            except Exception as err:
+                consecutive_errors += 1
+                context.append({"role": "assistant", "content": raw_decision})
+                context.append({"role": "tool", "content": f"ERROR: {str(err)}"})
+
+        return await self._fallback_to_cloud(context, failed_action={"reason": "max_steps_exceeded"})
+
+    async def _fallback_to_cloud(self, context: list[dict], failed_action: dict):
+        """云端大模型救场，并自动将这次救场记录为夜间增量微调的正样本（数据飞轮）"""
+        cloud_response = await self.cloud_llm.solve_with_full_schema(context)
+        with self.flywheel_log.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "timestamp": time.time(),
+                "context": context,
+                "rejected_local": failed_action,
+                "chosen_cloud": cloud_response
+            }, ensure_ascii=False) + "\n")
+        return cloud_response
+
+    async def compact_sliding_window_if_needed(self, uncompacted_events: list[dict]):
+        """后台静默切换至 lora-compactor，将事件流压缩为 Markdown 记忆补丁"""
+        patch_json = await self.local_llm.generate(
+            messages=[{"role": "user", "content": json.dumps(uncompacted_events, ensure_ascii=False)}],
+            lora_adapter="lora-compactor"
+        )
+        return json.loads(patch_json)
+
+    def _append_event(self, event_type: str, payload: dict):
+        with self.event_log.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": time.time(), "type": event_type, "data": payload}, ensure_ascii=False) + "\n")</code></pre>
+                </div>
+
+                <!-- Phase 4 Milestones -->
+                <div class="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-2">
+                    <div class="text-xs font-mono text-zinc-400 mb-2">PHASE 4 动手验收节点：</div>
+                    <div id="milestones-p4" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+                </div>
+            </section>
+
+            <!-- SECTION 5: SUMMARY CHECKLIST & EXPORT -->
+            <section id="sec-checklist" class="space-y-6 scroll-mt-20 pb-12">
+                <div class="p-6 rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-900 to-emerald-950/30 border border-zinc-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <div class="space-y-2">
+                        <div class="text-xs font-mono text-emerald-400">READY TO BUILD // MILESTONE SUMMARY</div>
+                        <h2 class="text-xl font-bold text-white">端侧小模型内嵌工程验收总表</h2>
+                        <p class="text-xs text-zinc-400 max-w-2xl leading-relaxed">
+                            完成上方全部 12 个检查点后，你将拥有一套完全运行在自己 8GB 显卡上的 **Zero-Schema 多步工具执行器 + 后台记忆压缩器 + 自动纠错数据飞轮**。点击右侧按钮可将整份实战蓝图与当前进度导出为本地 Markdown 文档。
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3 self-stretch md:self-auto">
+                        <button onclick="exportMarkdownReport()" class="w-full md:w-auto px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-xs tracking-wide transition shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span>一键导出完整学习手册 (.md)</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-zinc-900 border border-emerald-500/40 text-emerald-300 px-4 py-2.5 rounded-xl shadow-2xl text-xs font-mono flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span id="toastMsg">已复制到剪贴板</span>
+    </div>
+
+    <script>
+        // --- 1. DATA DEFINITIONS ---
+        const openSourceWheels = [
+            {
+                id: 'apigen',
+                name: 'xLAM / APIGen',
+                org: 'Salesforce',
+                tag: '数据合成管线',
+                color: 'cyan',
+                whatItSolved: '解决了小模型微调缺乏高质量、多步连续函数调用轨迹数据的问题。',
+                whyNotUseDirectly: '现成模型要求在 Prompt 中传入通用 JSON Schema；你需要的是将自己私有的 15~25 个工具直接烘焙进权重（Zero-Schema）。',
+                whatToSteal: '偷师其「Teacher 轨迹合成 + 本地 Pydantic/AST 强校验过滤 + 20% 故意报错后修正重试」的数据清洗管线。'
+            },
+            {
+                id: 'hammer',
+                name: 'Hammer 2.1 (1.5B/3B)',
+                org: 'MadeAgents',
+                tag: 'Function Calling 底座',
+                color: 'emerald',
+                whatItSolved: '通过逆向函数掩码（Irrelevance Masking）训练小模型识别何时该调工具、何时该拒答或追问。',
+                whyNotUseDirectly: '默认输出格式带有通用封装开销，且不理解你自定义的事件流与记忆 Patch 格式。',
+                whatToSteal: '直接拿它或 Qwen2.5-Coder-3B 作为微调起点，并在训练集中加入 10%「缺少必要参数时向用户反问而非瞎猜」的样本。'
+            },
+            {
+                id: 'frugal',
+                name: 'FrugalGPT / RouteLLM',
+                org: 'Stanford / LMSYS',
+                tag: '异构模型级联',
+                color: 'amber',
+                whatItSolved: '证明了用小模型先处理 85% 常规请求、失败再交由大模型兜底，可降低 90% 成本且不降整体智商。',
+                whyNotUseDirectly: '现成路由器只针对单轮问答难度做二分类，无法处理多步 Agent 循环中的工具执行状态熔断。',
+                whatToSteal: '在你的 Agent 循环中内嵌 `escalate_to_cloud(reason)` 虚拟工具与连续报错计数器，实现执行中动态接力。'
+            },
+            {
+                id: 'llmlingua',
+                name: 'LLMLingua-2 / MemGPT',
+                org: 'Microsoft / Letta',
+                tag: '上下文与记忆压缩',
+                color: 'purple',
+                whatItSolved: '解决长对话历史撑爆上下文窗口与 Token 账单指数膨胀的问题。',
+                whyNotUseDirectly: '硬删 Token 会破坏 JSONL 事件流结构，通用摘要又容易漏掉文件路径或未完成任务状态。',
+                whatToSteal: '专门训一个 `lora-compactor`，读取你的 `main_events.jsonl` 双游标区间，直接输出结构化的 Markdown 记忆库增量补丁。'
+            },
+            {
+                id: 'apple',
+                name: 'Apple Intelligence',
+                org: 'Apple (端侧架构)',
+                tag: '单基座 + 多 LoRA',
+                color: 'rose',
+                whatItSolved: '在严苛的端侧显存预算下，用一个 3B 常驻底座配合十几个轻量 Adapter 完成全系统任务。',
+                whyNotUseDirectly: '系统闭源，专为 iOS/macOS 定制。',
+                whatToSteal: '在你的 8GB 显卡上只常驻一个 2.3GB 的 3B GGUF 底座，按前台调工具 / 后台压记忆动态毫秒级热切换不同 LoRA。'
+            }
+        ];
+
+        const milestonesData = {
+            p1: [
+                { id: 'm1_1', title: '定义核心工具 Pydantic Schema', desc: '梳理 15~20 个高频本地工具并编写强类型参数校验类' },
+                { id: 'm1_2', title: '合成 500 条多步调用轨迹', desc: '包含 80% 正常多步链条 + 20% 工具报错后修正参数重试链条' },
+                { id: 'm1_3', title: '剥离冗长 Schema 导出 JSONL', desc: '将 System Prompt 压缩至 30 Token，生成 Zero-Schema 训练集' }
+            ],
+            p2: [
+                { id: 'm2_1', title: '配置 Unsloth 8GB 训练环境', desc: '验证 Qwen2.5-Coder-3B 4-bit 加载与 unsloth 梯度检查点' },
+                { id: 'm2_2', title: '训练 lora-executor (工具执行)', desc: '使用 r=32, alpha=64 全线性层训练 3 Epochs，Loss 稳定收敛' },
+                { id: 'm2_3', title: '训练 lora-compactor (记忆压缩)', desc: '使用真实 main_events.jsonl 历史蒸馏训练双游标摘要与 Markdown Patch' }
+            ],
+            p3: [
+                { id: 'm3_1', title: '编写紧凑 Action GBNF 语法树', desc: '锁死 {"thought": "...", "call": "...", "args": {...}} 结构' },
+                { id: 'm3_2', title: '接入本地 llama.cpp / Ollama 推理', desc: '测试 Q4_K_M 量化下首字延迟 (<30ms) 与生成速度 (>80 tok/s)' },
+                { id: 'm3_3', title: '跑通 100 次压力测试 0 格式报错', desc: '验证开启 GBNF 后 JSON 解析与工具名合法率达到 100%' }
+            ],
+            p4: [
+                { id: 'm4_1', title: '实现 Observation Pruning 截断器', desc: '拦截超过 600 字符的工具输出，保持 3B 上下文处于黄金高智商区' },
+                { id: 'm4_2', title: '打通 escalate_to_cloud 熔断接力', desc: '本地连续报错 2 次或遇超纲任务时无缝打包上下文移交云端' },
+                { id: 'm4_3', title: '闭环夜间数据飞轮 (Data Flywheel)', desc: '自动将云端救场轨迹存入 flywheel.jsonl，供周末增量微调' }
+            ]
+        };
+
+        const promptExamples = {
+            before: `// [合成阶段] 喂给云端 Teacher 大模型的完整 Prompt (~2,420 Tokens)
+{
+  "role": "system",
+  "content": "You are a personal agent. Available tools:\\n[\\n  {\\n    \\"name\\": \\"fs_read\\",\\n    \\"description\\": \\"Read local file content with line limits...\\",\\n    \\"parameters\\": {\\n      \\"type\\": \\"object\\",\\n      \\"properties\\": {\\n        \\"path\\": {\\"type\\": \\"string\\", \\"description\\": \\"Relative or absolute path\\"},\\n        \\"max_lines\\": {\\"type\\": \\"integer\\", \\"default\\": 100}\\n      },\\n      \\"required\\": [\\"path\\"]\\n    }\\n  },\\n  ... (其余 19 个工具的冗长 JSON Schema 定义，占 2200+ Tokens) ...\\n]"
+},
+{
+  "role": "user",
+  "content": "帮我看看 ./notes/todo.md 里今天有什么待办，顺便查下数据库里昨天的开销"
+},
+{
+  "role": "assistant",
+  "content": "{\\"thought\\":\\"先读取todo.md查看今日待办\\",\\"call\\":\\"fs_read\\",\\"args\\":{\\"path\\":\\"./notes/todo.md\\",\\"max_lines\\":100}}"
+}`,
+            after: `// [训练与推理阶段] 剥离 Schema 后的极速 Prompt (~165 Tokens, 提速 10x!)
+{
+  "role": "system",
+  "content": "You are LocalExecutor-3B. Output strict JSON: {\\"thought\\": \\"<15字内意图>\\", \\"call\\": \\"<tool_name>\\", \\"args\\": {...}}"
+},
+{
+  "role": "user",
+  "content": "帮我看看 ./notes/todo.md 里今天有什么待办，顺便查下数据库里昨天的开销"
+},
+{
+  "role": "assistant",
+  "content": "{\\"thought\\":\\"先读取todo.md查看今日待办\\",\\"call\\":\\"fs_read\\",\\"args\\":{\\"path\\":\\"./notes/todo.md\\",\\"max_lines\\":100}}"
+}
+// 💡 3B 模型通过 QLoRA (r=32) 已经把 fs_read 的参数结构背进了权重里，
+// 推理时无需再传数千字的 JSON Schema，本地首字延迟直接压到 25ms！`
+        };
+
+        const logitsSteps = [
+            {
+                prefix: '{"thought": "查昨日开销", "call": "',
+                candidates: [
+                    { token: 'sqlite_query"', prob: '94.2%', status: 'ALLOWED (匹配 dispatch 规则)', valid: true },
+                    { token: 'fs_read"', prob: '5.1%', status: 'ALLOWED (匹配 dispatch 规则)', valid: true },
+                    { token: 'search_web"', prob: '0.0% (原 18%)', status: 'MASKED (-∞, 未注册工具名)', valid: false },
+                    { token: 'SELECT *', prob: '0.0% (原 4%)', status: 'MASKED (-∞, 违反语法树)', valid: false }
+                ]
+            },
+            {
+                prefix: '{"thought": "查昨日开销", "call": "sqlite_query", "args": {',
+                candidates: [
+                    { token: '"sql": "', prob: '100.0%', status: 'LOCKED (sql-query-call 唯一合法键)', valid: true },
+                    { token: '"query": "', prob: '0.0% (原 31%)', status: 'MASKED (-∞, 杜绝参数名幻觉!)', valid: false },
+                    { token: '"path": "', prob: '0.0% (原 2%)', status: 'MASKED (-∞, 属于 fs_read 参数)', valid: false }
+                ]
+            }
+        ];
+
+        // --- 2. STATE MANAGEMENT ---
+        let completedMilestones = JSON.parse(localStorage.getItem('pa_8gb_milestones') || '{}');
+        let currentArchMode = 'hybrid';
+        let currentWheelId = 'apigen';
+        let currentLogitsIdx = 0;
+
+        // --- 3. RENDER FUNCTIONS ---
+        function switchArchMode(mode) {
+            currentArchMode = mode;
+            const btnCloud = document.getElementById('btnArchCloud');
+            const btnHybrid = document.getElementById('btnArchHybrid');
+            const panel = document.getElementById('archPanel');
+
+            if (mode === 'cloud') {
+                btnCloud.className = 'px-3 py-1.5 rounded-lg text-xs font-medium transition bg-rose-500/20 text-rose-300 border border-rose-500/30';
+                btnHybrid.className = 'px-3 py-1.5 rounded-lg text-xs font-medium transition text-zinc-400 hover:text-white';
+                panel.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="text-xs font-mono text-rose-400 uppercase tracking-wider">传统全云端 ReAct 循环 (为什么又慢又贵)</span>
+                            <span class="text-xs font-mono text-rose-300 bg-rose-950/60 border border-rose-500/30 px-2.5 py-1 rounded">5 步任务耗时 ~18.5s | 消耗 ~16,500 Tokens</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                            <div class="p-3.5 rounded-xl bg-zinc-950 border border-rose-500/20 space-y-1">
+                                <div class="font-mono text-rose-400 font-semibold">Step 1: 臃肿 Prefill</div>
+                                <p class="text-zinc-400">每次请求都要重发 2400 Tokens 的全部工具 JSON Schema + 历史事件。</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-zinc-950 border border-rose-500/20 space-y-1">
+                                <div class="font-mono text-rose-400 font-semibold">Step 2: 冗长 CoT 废话</div>
+                                <p class="text-zinc-400">云端大模型先生成 150 字自然语言思考，网络 RTT + 排队动辄 3 秒/步。</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-zinc-950 border border-rose-500/20 space-y-1">
+                                <div class="font-mono text-rose-400 font-semibold">Step 3: 原始结果直塞</div>
+                                <p class="text-zinc-400">网页 DOM 或长文件内容原样塞回上下文，Token 账单随步数呈指数级爆炸。</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-zinc-950 border border-rose-500/20 space-y-1">
+                                <div class="font-mono text-rose-400 font-semibold">Step 4: 窗口压缩高成本</div>
+                                <p class="text-zinc-400">后台双游标窗口每次滑动压缩都要再次调用昂贵的云端 API。</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                btnHybrid.className = 'px-3 py-1.5 rounded-lg text-xs font-medium transition bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                btnCloud.className = 'px-3 py-1.5 rounded-lg text-xs font-medium transition text-zinc-400 hover:text-white';
+                panel.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="text-xs font-mono text-emerald-400 uppercase tracking-wider">8GB 端云异构级联架构 (单 3B 底座 + 多 LoRA 热切换)</span>
+                            <span class="text-xs font-mono text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded">5 步任务耗时 ~1.4s (快13倍) | 云端 Token 消耗节省 ~90%</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                            <div class="p-3.5 rounded-xl bg-zinc-950 border border-emerald-500/30 space-y-1.5 relative">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-mono text-emerald-400 font-semibold">1. Zero-Schema 极速环</span>
+                                    <span class="text-[10px] font-mono bg-emerald-500/10 text-emerald-300 px-1.5 py-0.5 rounded">25ms TTFT</span>
+                                </div>
+                                <p class="text-zinc-400">本地常驻 <code class="text-zinc-200">Qwen2.5-Coder-3B</code> + <code class="text-cyan-300">lora-executor</code>，不传工具 Schema 直接连续调本地工具。</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-zinc-950 border border-cyan-500/30 space-y-1.5">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-mono text-cyan-400 font-semibold">2. GBNF + 返回值瘦身</span>
+                                    <span class="text-[10px] font-mono bg-cyan-500/10 text-cyan-300 px-1.5 py-0.5 rounded">0% 格式错</span>
+                                </div>
+                                <p class="text-zinc-400">GBNF 锁死极简 JSON 输出（每步仅 ~35 Tokens），Harness 层自动截断超长工具返回值。</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-zinc-950 border border-purple-500/30 space-y-1.5">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-mono text-purple-400 font-semibold">3. 后台记忆热切换</span>
+                                    <span class="text-[10px] font-mono bg-purple-500/10 text-purple-300 px-1.5 py-0.5 rounded">0 API 账单</span>
+                                </div>
+                                <p class="text-zinc-400">当 <code class="text-zinc-200">main_events.jsonl</code> 触发窗口阈值，毫秒级切换挂载 <code class="text-purple-300">lora-compactor</code> 整理 Markdown 记忆。</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-zinc-950 border border-amber-500/30 space-y-1.5">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-mono text-amber-400 font-semibold">4. 云端兜底与数据飞轮</span>
+                                    <span class="text-[10px] font-mono bg-amber-500/10 text-amber-300 px-1.5 py-0.5 rounded">自进化闭环</span>
+                                </div>
+                                <p class="text-zinc-400">遇超纲难题或连续 2 次报错自动 <code class="text-amber-300">escalate_to_cloud</code>，云端示范轨迹自动沉淀为下周微调样本。</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderWheelCards() {
+            const container = document.getElementById('wheelCardsContainer');
+            container.innerHTML = openSourceWheels.map(w => {
+                const active = w.id === currentWheelId;
+                return `
+                    <button onclick="selectWheel('${w.id}')" class="text-left p-3.5 rounded-xl border transition-all ${
+                        active
+                        ? 'bg-zinc-900 border-cyan-400/60 shadow-lg shadow-cyan-500/5'
+                        : 'bg-zinc-900/40 border-zinc-800/80 hover:border-zinc-700'
+                    }">
+                        <div class="flex items-center justify-between text-[11px] font-mono text-zinc-400 mb-1">
+                            <span>${w.org}</span>
+                            <span class="${active ? 'text-cyan-400' : 'text-zinc-500'}">●</span>
+                        </div>
+                        <div class="font-bold text-sm text-white truncate">${w.name}</div>
+                        <div class="mt-2 inline-block px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-950 text-zinc-300 border border-zinc-800">
+                            ${w.tag}
+                        </div>
+                    </button>
+                `;
+            }).join('');
+
+            const selected = openSourceWheels.find(w => w.id === currentWheelId);
+            document.getElementById('wheelDetailBox').innerHTML = `
+                <div class="space-y-2 flex-1">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded text-xs font-mono bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">${selected.name}</span>
+                        <span class="text-xs text-zinc-400">拆解与手搓指南</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 text-xs">
+                        <div class="p-3 rounded-lg bg-zinc-950/80 border border-zinc-800">
+                            <div class="font-mono text-zinc-400 mb-1">1. 它解决了什么问题？</div>
+                            <p class="text-zinc-200 leading-relaxed">${selected.whatItSolved}</p>
+                        </div>
+                        <div class="p-3 rounded-lg bg-zinc-950/80 border border-zinc-800">
+                            <div class="font-mono text-rose-400 mb-1">2. 为什么不能直接无脑拿来用？</div>
+                            <p class="text-zinc-200 leading-relaxed">${selected.whyNotUseDirectly}</p>
+                        </div>
+                        <div class="p-3 rounded-lg bg-emerald-950/20 border border-emerald-500/30">
+                            <div class="font-mono text-emerald-400 mb-1">3. 我们手搓时偷师它什么核心？</div>
+                            <p class="text-emerald-100 leading-relaxed">${selected.whatToSteal}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function selectWheel(id) {
+            currentWheelId = id;
+            renderWheelCards();
+        }
+
+        function togglePromptView(mode) {
+            const btnBefore = document.getElementById('btnPromptBefore');
+            const btnAfter = document.getElementById('btnPromptAfter');
+            const viewer = document.getElementById('promptComparisonViewer');
+
+            if (mode === 'before') {
+                btnBefore.className = 'px-2.5 py-1 rounded text-xs font-mono bg-rose-500/20 text-rose-300 border border-rose-500/30 transition';
+                btnAfter.className = 'px-2.5 py-1 rounded text-xs font-mono text-zinc-400 hover:text-white transition';
+                viewer.textContent = promptExamples.before;
+            } else {
+                btnAfter.className = 'px-2.5 py-1 rounded text-xs font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition';
+                btnBefore.className = 'px-2.5 py-1 rounded text-xs font-mono text-zinc-400 hover:text-white transition';
+                viewer.textContent = promptExamples.after;
+            }
+        }
+
+        function updateVramCalc() {
+            const size = parseFloat(document.getElementById('selModelSize').value);
+            const ctx = parseInt(document.getElementById('selCtxLen').value);
+            const rank = parseInt(document.getElementById('selLoraRank').value);
+
+            document.getElementById('lblModelSize').textContent = size + 'B';
+            document.getElementById('lblCtxLen').textContent = ctx;
+            document.getElementById('lblLoraRank').textContent = 'r = ' + rank;
+
+            // Realistic empirical formula for Unsloth 4-bit QLoRA on 8GB VRAM
+            const baseWeightsVram = size * 0.68; // 4-bit weights + overhead
+            const loraAndOptVram = (size * 0.22) * (rank / 32);
+            const activationVram = (ctx / 2048) * (size * 0.35);
+            const cudaContext = 0.65;
+
+            const totalTrain = +(baseWeightsVram + loraAndOptVram + activationVram + cudaContext).toFixed(2);
+            const totalInfer = +(size * 0.62 + (ctx / 4096) * 0.45 + 0.25).toFixed(2);
+
+            const trainPct = Math.min(100, Math.round((totalTrain / 8.0) * 100));
+            const inferPct = Math.min(100, Math.round((totalInfer / 8.0) * 100));
+
+            document.getElementById('valTrainVram').textContent = `${totalTrain} GB / 8.00 GB`;
+            document.getElementById('valInferVram').textContent = `${totalInfer} GB / 8.00 GB`;
+
+            const barTrain = document.getElementById('barTrainVram');
+            const badge = document.getElementById('vramStatusBadge');
+
+            barTrain.style.width = trainPct + '%';
+            document.getElementById('barInferVram').style.width = inferPct + '%';
+
+            document.getElementById('descTrainVram').textContent =
+                `4-bit权重: ${baseWeightsVram.toFixed(2)}GB | LoRA+优化器: ${loraAndOptVram.toFixed(2)}GB | 激活值+上下文: ${(activationVram + cudaContext).toFixed(2)}GB`;
+
+            if (totalTrain > 7.9) {
+                barTrain.className = 'h-full rounded-full bg-rose-500 transition-all duration-300';
+                document.getElementById('valTrainVram').className = 'font-mono text-sm font-bold text-rose-400';
+                badge.className = 'px-3 py-1 rounded-full text-xs font-mono font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30';
+                badge.textContent = '⚠️ 显存溢出风险 (OOM) · 请调小上下文或模型';
+            } else if (totalTrain > 6.8) {
+                barTrain.className = 'h-full rounded-full bg-amber-500 transition-all duration-300';
+                document.getElementById('valTrainVram').className = 'font-mono text-sm font-bold text-amber-400';
+                badge.className = 'px-3 py-1 rounded-full text-xs font-mono font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30';
+                badge.textContent = '极限高压状态 · 需关闭浏览器硬件加速';
+            } else {
+                barTrain.className = 'h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-300';
+                document.getElementById('valTrainVram').className = 'font-mono text-sm font-bold text-emerald-400';
+                badge.className = 'px-3 py-1 rounded-full text-xs font-mono font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
+                badge.textContent = '黄金甜点位 · 8GB 显卡流畅训练';
+            }
+        }
+
+        function cycleLogitsDemo() {
+            currentLogitsIdx = (currentLogitsIdx + 1) % logitsSteps.length;
+            renderLogitsDemo();
+        }
+
+        function renderLogitsDemo() {
+            const step = logitsSteps[currentLogitsIdx];
+            document.getElementById('logitsPrefixDisplay').textContent = step.prefix;
+            document.getElementById('logitsCandidatesBox').innerHTML = step.candidates.map(c => `
+                <div class="flex items-center justify-between p-2 rounded border ${
+                    c.valid
+                    ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
+                    : 'bg-zinc-900/60 border-zinc-800 text-zinc-500 line-through'
+                }">
+                    <span class="font-semibold">${c.token}</span>
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <span>${c.prob}</span>
+                        <span class="${c.valid ? 'text-emerald-400' : 'text-rose-400 no-underline'}">${c.status}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderMilestones() {
+            let total = 0;
+            let done = 0;
+
+            ['p1', 'p2', 'p3', 'p4'].forEach(phaseKey => {
+                const items = milestonesData[phaseKey];
+                let phaseDone = 0;
+                const container = document.getElementById(`milestones-${phaseKey}`);
+
+                container.innerHTML = items.map(item => {
+                    total++;
+                    const isChecked = !!completedMilestones[item.id];
+                    if (isChecked) {
+                        done++;
+                        phaseDone++;
+                    }
+                    return `
+                        <label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition select-none ${
+                            isChecked
+                            ? 'bg-emerald-950/20 border-emerald-500/40 text-zinc-100'
+                            : 'bg-zinc-950/70 border-zinc-800/80 hover:border-zinc-700 text-zinc-300'
+                        }">
+                            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleMilestone('${item.id}')" class="mt-0.5 rounded bg-zinc-900 border-zinc-700 text-emerald-500 focus:ring-0">
+                            <div class="text-xs space-y-0.5">
+                                <div class="font-semibold ${isChecked ? 'line-through text-emerald-300' : 'text-zinc-200'}">${item.title}</div>
+                                <div class="text-[11px] text-zinc-400 leading-snug">${item.desc}</div>
+                            </div>
+                        </label>
+                    `;
+                }).join('');
+
+                const badge = document.getElementById(`badge-${phaseKey}`);
+                badge.textContent = `${phaseDone}/${items.length}`;
+                badge.className = phaseDone === items.length
+                    ? 'text-[11px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : 'text-[11px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400';
+            });
+
+            const pct = Math.round((done / total) * 100);
+            document.getElementById('headerProgressText').textContent = `${done} / ${total} (${pct}%)`;
+            document.getElementById('headerProgressBar').style.width = `${pct}%`;
+        }
+
+        function toggleMilestone(id) {
+            completedMilestones[id] = !completedMilestones[id];
+            localStorage.setItem('pa_8gb_milestones', JSON.stringify(completedMilestones));
+            renderMilestones();
+        }
+
+        function resetProgress() {
+            completedMilestones = {};
+            localStorage.removeItem('pa_8gb_milestones');
+            renderMilestones();
+            showToast('学习进度已重置');
+        }
+
+        // --- 4. UTILITIES (CLIPBOARD & EXPORT) ---
+        function copyCode(elementId, btnEl) {
+            const text = document.getElementById(elementId).innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            const original = btnEl.textContent;
+            btnEl.textContent = '✓ 已复制';
+            btnEl.classList.add('text-emerald-400');
+            showToast('代码已复制到剪贴板');
+            setTimeout(() => {
+                btnEl.textContent = original;
+                btnEl.classList.remove('text-emerald-400');
+            }, 1800);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2200);
+        }
+
+        function exportMarkdownReport() {
+            const lines = [
+                `# Personal Agent 端侧小模型内嵌实战指南 (8GB VRAM 专版)`,
+                `> 导出时间: ${new Date().toLocaleString()}`,
+                ``,
+                `## 1. 核心架构主张：端云级联 + 单基座多 LoRA`,
+                `- **底座统一**: 本地常驻 \`Qwen2.5-Coder-3B-Instruct (GGUF Q4_K_M)\`，仅占 ~2.4GB 显存。`,
+                `- **Zero-Schema 工具调用**: 通过 Unsloth QLoRA (r=32) 将私有工具参数结构烘焙进权重，省去每次请求 2000+ Token 的 Schema 预填充。`,
+                `- **GBNF 语法锁死**: 使用 llama.cpp 受限解码状态机，物理级保证 0% JSON 解析错误。`,
+                `- **双 LoRA 职责分离**: \`lora-executor\` 负责前台多步工具循环，\`lora-compactor\` 负责后台 \`main_events.jsonl\` 压缩与 Markdown 记忆更新。`,
+                ``,
+                `## 2. 四阶段动手验收清单进度`
+            ];
+
+            ['p1', 'p2', 'p3', 'p4'].forEach((k, idx) => {
+                lines.push(`\n### Phase ${idx + 1}`);
+                milestonesData[k].forEach(m => {
+                    const mark = completedMilestones[m.id] ? 'x' : ' ';
+                    lines.push(`- [${mark}] **${m.title}**: ${m.desc}`);
+                });
+            });
+
+            const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'personal-agent-8gb-slm-roadmap.md';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('已导出 Markdown 实战指南');
+        }
+
+        // Mobile Sidebar Toggle
+        document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+            const sb = document.getElementById('sidebar');
+            sb.classList.toggle('-translate-x-full');
+        });
+
+        function closeMobileMenu() {
+            if (window.innerWidth < 1024) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+            }
+        }
+
+        // --- 5. INITIALIZATION ---
+        window.onload = function () {
+            switchArchMode('hybrid');
+            renderWheelCards();
+            togglePromptView('after');
+            updateVramCalc();
+            renderLogitsDemo();
+            renderMilestones();
+        };
+    </script>
+</body>
+</html>
